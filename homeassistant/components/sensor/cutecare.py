@@ -5,7 +5,6 @@ For more details about this platform, please refer to the documentation at
 https://home-assistant.io/components/sensor.cutecare/
 """
 import logging
-from cutecare.poller import CuteCarePoller
 import voluptuous as vol
 
 from homeassistant.components.sensor import PLATFORM_SCHEMA
@@ -70,6 +69,7 @@ class CuteCareSensorProxy(Entity):
         self.poller = poller
         self._unit = unit
         self._name = name
+        self._force_update = False
         self._state = None
         self.data = []
 
