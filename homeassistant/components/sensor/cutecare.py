@@ -48,7 +48,7 @@ def setup_platform(hass, config, add_devices, discovery_info=None):
     cache = config.get(CONF_CACHE)
     devs = []
 
-    poller = CuteCarePollerCC41A(config.get(CONF_MAC), backend=GatttoolBackend, cache_timeout=cache,adapter=config.get(CONF_DEVICE))
+    poller = CuteCarePollerCC41A(config.get(CONF_MAC), backend=GatttoolBackend, adapter=config.get(CONF_DEVICE))
     poller.ble_timeout = config.get(CONF_TIMEOUT)
     poller.retries = config.get(CONF_RETRIES)
 
