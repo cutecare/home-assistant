@@ -63,7 +63,7 @@ def setup_platform(hass, config, add_devices, discovery_info=None):
     add_devices(devs)
 
 class CuteCareSensorProxy(Entity):
-    def __init__(self, name, unit):
+    def __init__(self, poller, name, unit):
         self.poller = poller
         self._unit = unit
         self._name = name
