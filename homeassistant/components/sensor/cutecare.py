@@ -24,11 +24,11 @@ CONF_TIMEOUT = 'timeout'
 DEFAULT_DEVICE = 'hci0'
 DEFAULT_UPDATE_INTERVAL = 1200
 DEFAULT_NAME = 'CuteCare Sensor'
-DEFAULT_RETRIES = 2
-DEFAULT_TIMEOUT = 10
+DEFAULT_RETRIES = 3
+DEFAULT_TIMEOUT = 5
 
 SENSOR_TYPES = {
-    'moisture': ['Moisture', '%']
+    'Moisture': ['Moisture', '%']
 }
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
@@ -42,30 +42,28 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
 })
 
 def setup_platform(hass, config, add_devices, discovery_info=None):
-    from cutecare.poller import CuteCarePoller
+    from cutecare.poller import CuteCarePollerCC41A
     from cutecare.backends.gatttool import GatttoolBackend
 
     cache = config.get(CONF_CACHE)
-    poller = CuteCarePoller(config.get(CONF_MAC), backend=GatttoolBackend, cache_timeout=cache,adapter=config.get(CONF_DEVICE))
+    devs = []
+
+    poller = CuteCarePollerCC41A(config.get(CONF_MAC), backend=GatttoolBackend, cache_timeout=cache,adapter=config.get(CONF_DEVICE))
     poller.ble_timeout = config.get(CONF_TIMEOUT)
     poller.retries = config.get(CONF_RETRIES)
-
-    devs = []
 
     for parameter in config[CONF_MONITORED_CONDITIONS]:
         name = SENSOR_TYPES[parameter][0]
         unit = SENSOR_TYPES[parameter][1]
-
         prefix = config.get(CONF_NAME)
         if prefix:
             name = "{} {}".format(prefix, name)
-
         devs.append(CuteCareSensorProxy(poller, name, unit))
 
     add_devices(devs)
 
 class CuteCareSensorProxy(Entity):
-    def __init__(self, poller, name, unit):
+    def __init__(self, name, unit):
         self.poller = poller
         self._unit = unit
         self._name = name
