@@ -28,7 +28,8 @@ DEFAULT_RETRIES = 3
 DEFAULT_TIMEOUT = 5
 
 SENSOR_TYPES = {
-    'dryness': ['Dryness', '%']
+    'dryness': ['Dryness', '%'],
+    'moisture': ['Moisture', '%.']
 }
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
@@ -96,7 +97,8 @@ class CuteCareSensorProxy(Entity):
         try:
             _LOGGER.debug("Polling data for %s", self.name)
             transformations = {
-                '%': lambda value: round((value / 1024) * 100,1)
+                '%': lambda value: round((value / 1024) * 100,1),
+                '%.': lambda value: round(100 - (value / 1024) * 100,1)
             }
             self._state = transformations[self._unit](self.poller.parameter_value())
         except IOError as ioerr:
