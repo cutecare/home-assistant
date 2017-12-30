@@ -27,6 +27,7 @@ class CuteCareLightProxy(Light):
 
     def __init__(self, poller, name):
         self.poller = poller
+        self._state = None
         self._name = name
 
     @property
