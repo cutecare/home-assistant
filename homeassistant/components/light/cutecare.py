@@ -13,10 +13,6 @@ CONF_ON_STATE = 'on_state'
 DEFAULT_ON_STATE = 'low'
 STATES = ['high', 'low']
 
-PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
-    vol.Optional(CONF_ON_STATE, default=DEFAULT_ON_STATE): vol.In(STATES),
-})
-
 def setup_platform(hass, config, add_devices, discovery_info=None):
     from cutecare.poller import CuteCarePollerCC41A
     from cutecare.backends.gatttool import GatttoolBackend
