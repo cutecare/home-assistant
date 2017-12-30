@@ -27,7 +27,6 @@ class CuteCareLightProxy(Light):
 
     def __init__(self, poller, name):
         self.poller = poller
-        self._state = True
         self._name = name
 
     @property
@@ -47,16 +46,17 @@ class CuteCareLightProxy(Light):
 
     def _set_state(self, state):
         """Initialize the ZigBee digital out device."""
-        self._state = not state
         self.poller.set_gpio1(state)
 
     def turn_on(self, **kwargs):
         """Set the digital output to its 'on' state."""
         self._set_state(False)
+        self._state = True
 
     def turn_off(self, **kwargs):
         """Set the digital output to its 'off' state."""
         self._set_state(True)
+        self._state = False
 
     def update(self):
         """Set the digital output to its 'off' state."""
