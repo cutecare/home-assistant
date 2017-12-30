@@ -51,11 +51,11 @@ class CuteCareLightProxy(Light):
 
     def turn_on(self, **kwargs):
         """Set the digital output to its 'on' state."""
-        self._set_state(True)
+        self._set_state(False)
 
     def turn_off(self, **kwargs):
         """Set the digital output to its 'off' state."""
-        self._set_state(False)
+        self._set_state(True)
 
     def update(self):
         self._state = True
