@@ -5,13 +5,16 @@ For more details about this platform, please refer to the documentation at
 https://home-assistant.io/components/light.zigbee/
 """
 import voluptuous as vol
+from homeassistant.helpers.entity import Entity
 from homeassistant.components.light import Light
+from homeassistant.const import (CONF_NAME, CONF_MAC)
 
 REQUIREMENTS = ['cutecare-py']
 
 CONF_ON_STATE = 'on_state'
 DEFAULT_ON_STATE = 'low'
 STATES = ['high', 'low']
+CONF_DEVICE = 'device'
 
 def setup_platform(hass, config, add_devices, discovery_info=None):
     from cutecare.poller import CuteCarePollerCC41A
