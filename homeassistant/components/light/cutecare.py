@@ -40,7 +40,7 @@ class CuteCareLightProxy(Entity):
     def _set_state(self, state):
         """Initialize the ZigBee digital out device."""
         
-     def turn_on(self, **kwargs):
+    def turn_on(self, **kwargs):
         """Set the digital output to its 'on' state."""
         self._set_state(True)
 
