@@ -21,23 +21,34 @@ def setup_platform(hass, config, add_devices, discovery_info=None):
     from cutecare.backends.gatttool import GatttoolBackend
 
     poller = CuteCarePollerCC41A(config.get(CONF_MAC), backend=GatttoolBackend, adapter=config.get(CONF_DEVICE))
-    add_devices([CuteCareLightProxy(poller)])
+    add_devices([CuteCareLightProxy(poller, config.get(CONF_NAME))])
 
 class CuteCareLightProxy(Entity):
     """Representation of a GPIO pin configured as a digital input."""
 
-    def __init__(self, poller):
+    def __init__(self, poller, name):
         self.poller = poller
         self._state = True
+        self._name = name
 
     @property
     def is_on(self):
         """Return True if the Entity is on, else False."""
         return self._state
 
+    @property
+    def name(self):
+        """Return the name of the sensor."""
+        return self._name
+
+    @property
+    def state(self):
+        """Return the state of the sensor."""
+        return self._state
+
     def _set_state(self, state):
         """Initialize the ZigBee digital out device."""
-        
+
     def turn_on(self, **kwargs):
         """Set the digital output to its 'on' state."""
         self._set_state(True)
