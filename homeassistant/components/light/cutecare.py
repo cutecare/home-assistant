@@ -59,4 +59,4 @@ class CuteCareLightProxy(Light):
         self._set_state(True)
 
     def update(self):
-        #self._state = True
+        """Set the digital output to its 'off' state."""
