@@ -5,7 +5,6 @@ For more details about this platform, please refer to the documentation at
 https://home-assistant.io/components/light.zigbee/
 """
 import voluptuous as vol
-from homeassistant.helpers.entity import Entity
 from homeassistant.components.light import Light
 from homeassistant.const import (CONF_NAME, CONF_MAC)
 
@@ -23,7 +22,7 @@ def setup_platform(hass, config, add_devices, discovery_info=None):
     poller = CuteCareGPIOJDY8(config.get(CONF_MAC), backend=GatttoolBackend, adapter=config.get(CONF_DEVICE))
     add_devices([CuteCareLightProxy(poller, config.get(CONF_NAME))])
 
-class CuteCareLightProxy(Entity):
+class CuteCareLightProxy(Light):
     """Representation of a GPIO pin configured as a digital input."""
 
     def __init__(self, poller, name):
