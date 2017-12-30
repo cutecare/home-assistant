@@ -28,8 +28,7 @@ class CuteCareLightProxy(Entity):
 
     def __init__(self, poller):
         self.poller = poller
-        self._unit = unit
-        self._state = None
+        self._state = True
 
     @property
     def is_on(self):
