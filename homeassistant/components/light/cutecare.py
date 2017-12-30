@@ -17,10 +17,10 @@ STATES = ['high', 'low']
 CONF_DEVICE = 'device'
 
 def setup_platform(hass, config, add_devices, discovery_info=None):
-    from cutecare.poller import CuteCarePollerCC41A
+    from cutecare.gpio import CuteCareGPIOJDY8
     from cutecare.backends.gatttool import GatttoolBackend
 
-    poller = CuteCarePollerCC41A(config.get(CONF_MAC), backend=GatttoolBackend, adapter=config.get(CONF_DEVICE))
+    poller = CuteCareGPIOJDY8(config.get(CONF_MAC), backend=GatttoolBackend, adapter=config.get(CONF_DEVICE))
     add_devices([CuteCareLightProxy(poller, config.get(CONF_NAME))])
 
 class CuteCareLightProxy(Entity):
@@ -48,6 +48,7 @@ class CuteCareLightProxy(Entity):
 
     def _set_state(self, state):
         """Initialize the ZigBee digital out device."""
+        self.poller.set_gpio1(state)
 
     def turn_on(self, **kwargs):
         """Set the digital output to its 'on' state."""
