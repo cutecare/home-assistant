@@ -30,6 +30,7 @@ class CuteCareLightProxy(Light):
         self.poller = poller
         self._state = False
         self._name = name
+        self.update()
 
     @property
     def is_on(self):
@@ -42,7 +43,7 @@ class CuteCareLightProxy(Light):
 
     @property
     def assumed_state(self):
-        return True
+        return False
 
     @property
     def name(self):
