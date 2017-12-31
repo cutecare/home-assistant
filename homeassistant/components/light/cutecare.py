@@ -74,3 +74,4 @@ class CuteCareLightProxy(Light):
         """Synchronise internal state with the actual light state."""
         file = open(STATE_FILE_PATH, 'r')
         self._state = True if file.read() == '1' else False
+        file.close()
