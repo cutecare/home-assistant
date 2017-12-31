@@ -27,13 +27,23 @@ class CuteCareLightProxy(Light):
 
     def __init__(self, poller, name):
         self.poller = poller
-        self._state = None
+        self._state = False
         self._name = name
 
     @property
     def is_on(self):
         """Return True if the Entity is on, else False."""
         return self._state
+
+    @property
+    def should_poll(self):
+        """We can't read the device state, so poll."""
+        return False
+
+    @property
+    def assumed_state(self):
+        """We can read the actual state."""
+        return False
 
     @property
     def name(self):
@@ -45,19 +55,23 @@ class CuteCareLightProxy(Light):
         """Return the state of the sensor."""
         return self._state
 
-    def _set_state(self, state):
-        """Initialize the ZigBee digital out device."""
+    @retry
+    def set_state(self, state):
+        """Initialize digital out device."""
         self.poller.set_gpio1(state)
 
+    @retry
     def turn_on(self, **kwargs):
         """Set the digital output to its 'on' state."""
-        self._set_state(False)
+        self.set_state(False)
         self._state = True
 
+    @retry
     def turn_off(self, **kwargs):
         """Set the digital output to its 'off' state."""
-        self._set_state(True)
+        self.set_state(True)
         self._state = False
 
+    @retry
     def update(self):
-        """Set the digital output to its 'off' state."""
+        """Synchronise internal state with the actual light state."""
