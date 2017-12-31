@@ -59,7 +59,7 @@ class CuteCareLightProxy(Light):
         self._state = state
         self.poller.set_gpio(1, state)
         file = open(STATE_FILE_PATH, 'w')
-        file.write('1' is state else '0')
+        file.write('1' if state else '0')
         file.close()
 
     def turn_on(self, **kwargs):
