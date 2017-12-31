@@ -55,23 +55,19 @@ class CuteCareLightProxy(Light):
         """Return the state of the sensor."""
         return self._state
 
-    @retry
     def set_state(self, state):
         """Initialize digital out device."""
         self.poller.set_gpio1(state)
 
-    @retry
     def turn_on(self, **kwargs):
         """Set the digital output to its 'on' state."""
         self.set_state(False)
         self._state = True
 
-    @retry
     def turn_off(self, **kwargs):
         """Set the digital output to its 'off' state."""
         self.set_state(True)
         self._state = False
 
-    @retry
     def update(self):
         """Synchronise internal state with the actual light state."""
