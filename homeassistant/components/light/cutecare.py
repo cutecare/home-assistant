@@ -41,6 +41,10 @@ class CuteCareLightProxy(Light):
         return True
 
     @property
+    def assumed_state(self):
+        return True
+
+    @property
     def name(self):
         """Return the name of the sensor."""
         return self._name
