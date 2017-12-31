@@ -14,6 +14,7 @@ CONF_ON_STATE = 'on_state'
 DEFAULT_ON_STATE = 'low'
 STATES = ['high', 'low']
 CONF_DEVICE = 'device'
+STATE_FILE_PATH = '/config/cutecare-light-state'
 
 def setup_platform(hass, config, add_devices, discovery_info=None):
     from cutecare.gpio import CuteCareGPIOJDY8
@@ -37,13 +38,11 @@ class CuteCareLightProxy(Light):
 
     @property
     def should_poll(self):
-        """We can't read the device state, so poll."""
-        return False
+        return True
 
     @property
     def assumed_state(self):
-        """We can read the actual state."""
-        return False
+        return True
 
     @property
     def name(self):
@@ -59,6 +58,9 @@ class CuteCareLightProxy(Light):
         """Initialize digital out device."""
         self._state = state
         self.poller.set_gpio(1, state)
+        file = open(STATE_FILE_PATH, 'w')
+        file.write('1' is state else '0')
+        file.close()
 
     def turn_on(self, **kwargs):
         """Set the digital output to its 'on' state."""
@@ -70,3 +72,5 @@ class CuteCareLightProxy(Light):
 
     def update(self):
         """Synchronise internal state with the actual light state."""
+        file = open(STATE_FILE_PATH, 'r')
+        self._state = True if file.read() == '1' else False
