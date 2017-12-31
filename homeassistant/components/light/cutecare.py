@@ -43,7 +43,7 @@ class CuteCareLightProxy(Light):
 
     @property
     def assumed_state(self):
-        return False
+        return True
 
     @property
     def name(self):
