@@ -17,7 +17,7 @@ from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.deprecation import get_deprecated
 from homeassistant.helpers.entity import Entity
 import voluptuous as vol
-from bluepy.btle import Scanner, DefaultDelegate
+from bluepy.btle import Scanner, DefaultDelegate, BTLEException
 
 REQUIREMENTS = ['cutecare-py']
 
@@ -51,7 +51,7 @@ def async_setup(hass, config):
         while hass.data[DOMAIN][CUTECARE_STATE]:
             try:
                 scanner.scan(1.0)
-            except bluepy.btle.BTLEException as e:
+            except BTLEException as e:
                 _LOGGER.error(e)
 
         _LOGGER.info('Scanning has been terminated')
