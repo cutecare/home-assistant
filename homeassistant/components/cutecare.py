@@ -38,6 +38,8 @@ def async_setup(hass, config):
         CUTECARE_STATE: True
     }
 
+    _LOGGER.info('Start scanning of BLE devices')
+
     @asyncio.coroutine
     def scan_ble_devices():
         """Scanning BLE devices."""
@@ -57,11 +59,9 @@ def async_setup(hass, config):
             _LOGGER.info('Scanning has been completed')
 
     def stop_scanning(event):
-        __LOGGER.info('Stop scanning BLE devices')
+        _LOGGER.info('Stop scanning BLE devices')
         hass.data[DOMAIN][CUTECARE_STATE] = False
-
-    __LOGGER.info('Start scanning of BLE devices')
-
+        
     hass.async_add_job(scan_ble_devices)
     return True
 
