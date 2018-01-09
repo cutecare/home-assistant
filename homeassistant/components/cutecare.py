@@ -27,8 +27,7 @@ DOMAIN = 'cutecare'
 CUTECARE_DEVICES = 'devices'
 CUTECARE_STATE = 'state'
 
-@asyncio.coroutine
-def async_setup(hass, config):
+def setup(hass, config):
     """Set up the CuteCare component."""
 
     # Allow entities to register themselves by mac address to be looked up
@@ -53,6 +52,7 @@ def async_setup(hass, config):
 
         _LOGGER.info('Scanning has been terminated')
 
+    @asyncio.coroutine
     def stop_scanning(event):
         __LOGGER.info('Stop scanning BLE devices')
         hass.data[DOMAIN][CUTECARE_STATE] = False
@@ -81,7 +81,7 @@ class CuteCareDevice(Entity):
         """Initialize the device."""
         self.hass = hass
         self.mac = mac
-        self.hass.data[DOMAIN][CUTECARE_DEVICES][mac] = self
+        self.hass.data[DOMAIN][CUTECARE_DEVICES][mac] += self
 
 
 class CuteCareJDY08(CuteCareDevice):
