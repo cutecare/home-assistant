@@ -16,12 +16,12 @@ def setup_platform(hass, config, add_devices, discovery_info=None):
     add_devices([CuteCareBinarySensorProxy(hass, config.get(CONF_MAC), config.get(CONF_NAME))])
 
 
-class CuteCareBinarySensorProxy(BinarySensorDevice, CuteCareJDY08):
+class CuteCareBinarySensorProxy(BinarySensorDevice, cutecare.JDY08):
     """Representation of a GPIO pin configured as a digital input."""
 
     def __init__(self, hass, mac, name):
         self._name = name
-        CuteCareJDY08.__init__(self, hass, mac)
+        cutecare.JDY08.__init__(self, hass, mac)
 
     @property
     def assumed_state(self):
