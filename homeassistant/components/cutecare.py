@@ -50,7 +50,7 @@ def async_setup(hass, config):
         scanner = Scanner(0).withDelegate(BLEScanDelegate(hass))
         while hass.data[DOMAIN][CUTECARE_STATE]:
             try:
-                scanner.scan(1.0)
+                scanner.scan(3.0)
             except BTLEException as e:
                 _LOGGER.error(e)
 
