@@ -134,7 +134,10 @@ class JDY08Device(CuteCareDevice):
             self._minor = int(segments[4], 16)
             self._temp = int(segments[6], 16) >> 8
             self._humidity = int(segments[6], 16) & 0xFF
-            self._battery = int(segments[7], 16)
+
+        segments = list(map(''.join, zip(*[iter(data)]*2)))
+        if len(segments) > 0:
+            self._battery = int(segments[-1], 16)
 
         _LOGGER.info('Major found %d' % (self._major))
         
