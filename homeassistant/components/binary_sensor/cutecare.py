@@ -16,7 +16,7 @@ class CuteCareBinarySensorProxy(BinarySensorDevice, CuteCareJDY08):
 
     def __init__(self, hass, mac, name):
         self._name = name
-        CuteCareJDY08.__init__(hass, mac)
+        CuteCareJDY08.__init__(self, hass, mac)
 
     @property
     def assumed_state(self):
