@@ -54,7 +54,7 @@ def async_setup(hass, config):
                 scanner.scan(3.0)
             except BTLEException as e:
                 _LOGGER.error(e)
-            hass.async_add_job(scan_ble_devices)
+            """ hass.async_add_job(scan_ble_devices) """
         else:
             _LOGGER.info('Scanning has been completed')
 
