@@ -81,7 +81,7 @@ class CuteCareDevice(Entity):
         """Initialize the device."""
         self.hass = hass
         self.mac = mac
-        self.hass.data[DOMAIN][CUTECARE_DEVICES][mac] += self
+        self.hass.data[DOMAIN][CUTECARE_DEVICES][mac] = self
 
 
 class JDY08Device(CuteCareDevice):
