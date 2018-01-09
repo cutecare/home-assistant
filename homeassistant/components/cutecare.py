@@ -129,9 +129,7 @@ class JDY08Device(CuteCareDevice):
         """Parse service data."""
 
         segments = list(map(''.join, zip(*[iter(data)]*4)))
-        _LOGGER.info('Segments found %s %s %s %s' % (segments[3], segments[4], segments[5], segments[6]))
-
-        if len(segments) > 7:
+        if len(segments) > 6:
             self._major = int(segments[3], 16)
             self._minor = int(segments[4], 16)
             self._temp = int(segments[6], 16) >> 8
