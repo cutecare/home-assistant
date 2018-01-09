@@ -42,26 +42,29 @@ def async_setup(hass, config):
 
     @asyncio.coroutine
     def scan_ble_devices():
-        """Scanning BLE devices."""
-
-        # handle shutdown
-        hass.bus.async_listen_once(
-            EVENT_HOMEASSISTANT_STOP, stop_scanning)
-
         scanner = Scanner(0).withDelegate(BLEScanDelegate(hass))
         if hass.data[DOMAIN][CUTECARE_STATE]:
             try:
                 scanner.scan(3.0)
             except BTLEException as e:
                 _LOGGER.error(e)
-            """ hass.async_add_job(scan_ble_devices) """
+
+            hass.loop.call_later(1.0, do_scan_ble_devices)
         else:
             _LOGGER.info('Scanning has been completed')
+
+    @callback
+    def do_scan_ble_devices():
+        hass.async_add_job(scan_ble_devices)
 
     def stop_scanning(event):
         _LOGGER.info('Stop scanning BLE devices')
         hass.data[DOMAIN][CUTECARE_STATE] = False
         
+    # handle shutdown
+    hass.bus.async_listen_once(
+        EVENT_HOMEASSISTANT_STOP, stop_scanning)
+
     hass.async_add_job(scan_ble_devices)
     return True
 
@@ -124,6 +127,7 @@ class JDY08Device(CuteCareDevice):
 
     def set_data(self, data):
         """Parse service data."""
+
         segments = list(map(''.join, zip(*[iter(data)]*4)))
         if len(segments) > 7:
             self._major = int(segments[3], 16)
@@ -131,3 +135,5 @@ class JDY08Device(CuteCareDevice):
             self._temp = int(segments[6], 16) >> 8
             self._humidity = int(segments[6], 16) & 0xFF
             self._battery = int(segments[7], 16)
+        
+        self.async_schedule_update_ha_state()
