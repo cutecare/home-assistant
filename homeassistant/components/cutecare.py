@@ -47,7 +47,7 @@ def async_setup(hass, config):
         hass.bus.async_listen_once(
             EVENT_HOMEASSISTANT_STOP, stop_scanning)
 
-        scanner = Scanner().withDelegate(ScanDelegate(hass))
+        scanner = Scanner().withDelegate(BLEScanDelegate(hass))
         while hass.data[DOMAIN][CUTECARE_STATE]:
             scanner.scan(1.0)
 
