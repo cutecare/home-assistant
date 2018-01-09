@@ -33,4 +33,4 @@ class CuteCareBinarySensorProxy(BinarySensorDevice, JDY08Device):
     @property
     def is_on(self):
         """Return true if the binary sensor is on."""
-        return self.major() > 0
+        return self.major > 0

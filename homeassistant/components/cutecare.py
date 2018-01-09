@@ -41,15 +41,18 @@ def async_setup(hass, config):
     @asyncio.coroutine
     def scan_ble_devices():
         """Scanning BLE devices."""
-        _LOGGER.info('Establish scanning of BLE devices')
+        _LOGGER.info('Start scanning of BLE devices')
 
         # handle shutdown
         hass.bus.async_listen_once(
             EVENT_HOMEASSISTANT_STOP, stop_scanning)
 
-        scanner = Scanner().withDelegate(BLEScanDelegate(hass))
+        scanner = Scanner(0).withDelegate(BLEScanDelegate(hass))
         while hass.data[DOMAIN][CUTECARE_STATE]:
-            scanner.scan(1.0)
+            try:
+                scanner.scan(1.0)
+            except bluepy.btle.BTLEException e:
+                _LOGGER.error(e)
 
         _LOGGER.info('Scanning has been terminated')
 
