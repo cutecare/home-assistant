@@ -17,8 +17,6 @@ def setup_platform(hass, config, add_devices, discovery_info=None):
 
 
 class CuteCareBinarySensorProxy(BinarySensorDevice, JDY08Device):
-    """Representation of a GPIO pin configured as a digital input."""
-
     def __init__(self, hass, mac, name):
         self._name = name
         JDY08Device.__init__(self, hass, mac)
