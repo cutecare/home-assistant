@@ -46,8 +46,6 @@ def async_setup(hass, config):
         hass.bus.async_listen_once(
             EVENT_HOMEASSISTANT_STOP, stop_scanning)
 
-        _LOGGER.info('Start scanning of BLE devices')
-
         scanner = Scanner(0).withDelegate(BLEScanDelegate(hass))
         if hass.data[DOMAIN][CUTECARE_STATE]:
             try:
@@ -62,6 +60,8 @@ def async_setup(hass, config):
         __LOGGER.info('Stop scanning BLE devices')
         hass.data[DOMAIN][CUTECARE_STATE] = False
 
+   _LOGGER.info('Start scanning of BLE devices')
+
     hass.async_add_job(scan_ble_devices)
     return True
 
@@ -73,7 +73,7 @@ class BLEScanDelegate(DefaultDelegate):
     def handleDiscovery(self, dev, isNewDev, isNewData):
         if dev.addr in self._hass.data[DOMAIN][CUTECARE_DEVICES]:
             entity = self._hass.data[DOMAIN][CUTECARE_DEVICES][dev.addr]
-            for (adtype, value) in dev.getScanData():
+            for (adtype, description, value) in dev.getScanData():
                 if adtype == 22:
                     _LOGGER.info('BLE device service message has been found %s' % (value))
                     entity.set_data(value)
