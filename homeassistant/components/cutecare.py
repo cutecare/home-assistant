@@ -125,8 +125,9 @@ class JDY08Device(CuteCareDevice):
     def set_data(self, data):
         """Parse service data."""
         segments = list(map(''.join, zip(*[iter(data)]*4)))
-        self._major = int(segments[3], 16)
-        self._minor = int(segments[4], 16)
-        self._temp = int(segments[6], 16) >> 8
-        self._humidity = int(segments[6], 16) & 0xFF
-        self._battery = int(segments[7], 16)
+        if len(segments) > 7:
+            self._major = int(segments[3], 16)
+            self._minor = int(segments[4], 16)
+            self._temp = int(segments[6], 16) >> 8
+            self._humidity = int(segments[6], 16) & 0xFF
+            self._battery = int(segments[7], 16)
