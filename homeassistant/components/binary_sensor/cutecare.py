@@ -16,7 +16,7 @@ def setup_platform(hass, config, add_devices, discovery_info=None):
     add_devices([CuteCareBinarySensorProxy(hass, config.get(CONF_MAC), config.get(CONF_NAME))])
 
 
-class CuteCareBinarySensorProxy(BinarySensorDevice, JDY08Device):
+class CuteCareBinarySensorProxy(JDY08Device, BinarySensorDevice):
     def __init__(self, hass, mac, name):
         self._name = name
         JDY08Device.__init__(self, hass, mac)

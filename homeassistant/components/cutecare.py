@@ -11,7 +11,7 @@ import logging
 import os
 
 from homeassistant.const import (
-    EVENT_HOMEASSISTANT_STOP, STATE_UNKNOWN)
+    EVENT_HOMEASSISTANT_STOP, EVENT_STATE_CHANGED, ATTR_ENTITY_ID, ATTR_STATE, STATE_UNKNOWN)
 from homeassistant.core import CoreState, callback
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.deprecation import get_deprecated
@@ -45,7 +45,7 @@ def async_setup(hass, config):
         scanner = Scanner(0).withDelegate(BLEScanDelegate(hass))
         if hass.data[DOMAIN][CUTECARE_STATE]:
             try:
-                scanner.scan(1.0)
+                scanner.scan(2.0)
             except BTLEException as e:
                 _LOGGER.error(e)
 
@@ -129,11 +129,15 @@ class JDY08Device(CuteCareDevice):
         """Parse service data."""
 
         segments = list(map(''.join, zip(*[iter(data)]*4)))
+        _LOGGER.info('Segments found %d' % (len(segments)))
+
         if len(segments) > 7:
             self._major = int(segments[3], 16)
             self._minor = int(segments[4], 16)
             self._temp = int(segments[6], 16) >> 8
             self._humidity = int(segments[6], 16) & 0xFF
             self._battery = int(segments[7], 16)
+
+        _LOGGER.info('Major found %d' % (self._major))
         
-        self.async_schedule_update_ha_state()
+        self.schedule_update_ha_state(True)
