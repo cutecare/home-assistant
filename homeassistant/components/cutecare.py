@@ -51,7 +51,7 @@ def async_setup(hass, config):
         while hass.data[DOMAIN][CUTECARE_STATE]:
             try:
                 scanner.scan(1.0)
-            except bluepy.btle.BTLEException e:
+            except bluepy.btle.BTLEException as e:
                 _LOGGER.error(e)
 
         _LOGGER.info('Scanning has been terminated')
