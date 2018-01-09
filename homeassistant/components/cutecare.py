@@ -60,7 +60,7 @@ def async_setup(hass, config):
         __LOGGER.info('Stop scanning BLE devices')
         hass.data[DOMAIN][CUTECARE_STATE] = False
 
-   _LOGGER.info('Start scanning of BLE devices')
+   __LOGGER.info('Start scanning of BLE devices')
 
     hass.async_add_job(scan_ble_devices)
     return True
