@@ -45,11 +45,11 @@ def async_setup(hass, config):
         scanner = Scanner(0).withDelegate(BLEScanDelegate(hass))
         if hass.data[DOMAIN][CUTECARE_STATE]:
             try:
-                scanner.scan(3.0)
+                scanner.scan(1.0)
             except BTLEException as e:
                 _LOGGER.error(e)
 
-            hass.loop.call_later(1.0, do_scan_ble_devices)
+            hass.loop.call_later(0.1, do_scan_ble_devices)
         else:
             _LOGGER.info('Scanning has been completed')
 
