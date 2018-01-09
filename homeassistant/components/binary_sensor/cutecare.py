@@ -4,12 +4,17 @@ Binary sensor on CuteCate platform.
 For more details about this platform, please refer to the documentation at
 https://home-assistant.io/components/binary_sensor.cutecare/
 """
-from homeassistant.components.cutecare import CuteCareJDY08
+import homeassistant.components.cutecare as cutecare
 from homeassistant.components.binary_sensor import BinarySensorDevice
 from homeassistant.const import (CONF_NAME, CONF_MAC)
 
+DEPENDENCIES = ['cutecare']
+
 def setup_platform(hass, config, add_devices, discovery_info=None):
+    """ Setup devices as binary sensors """
+
     add_devices([CuteCareBinarySensorProxy(hass, config.get(CONF_MAC), config.get(CONF_NAME))])
+
 
 class CuteCareBinarySensorProxy(BinarySensorDevice, CuteCareJDY08):
     """Representation of a GPIO pin configured as a digital input."""
