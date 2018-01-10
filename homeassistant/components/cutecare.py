@@ -6,17 +6,13 @@ https://home-assistant.io/components/cutecare/
 """
 import asyncio
 from collections import defaultdict
-import functools as ft
+from datetime import timedelta
 import logging 
-import os
 
-from homeassistant.const import (
-    EVENT_HOMEASSISTANT_STOP, EVENT_STATE_CHANGED, ATTR_ENTITY_ID, ATTR_STATE, STATE_UNKNOWN)
-from homeassistant.core import CoreState, callback
+from homeassistant.const import (EVENT_HOMEASSISTANT_STOP)
 from homeassistant.exceptions import HomeAssistantError
-from homeassistant.helpers.deprecation import get_deprecated
 from homeassistant.helpers.entity import Entity
-import voluptuous as vol
+from homeassistant.helpers.event import async_track_time_interval
 from bluepy.btle import Scanner, DefaultDelegate, BTLEException
 
 REQUIREMENTS = ['cutecare-py']
@@ -45,22 +41,19 @@ def async_setup(hass, config):
         scanner = Scanner(0).withDelegate(BLEScanDelegate(hass))
         if hass.data[DOMAIN][CUTECARE_STATE]:
             try:
-                scanner.scan(2.0)
+                scanner.scan(1.0)
             except BTLEException as e:
                 _LOGGER.error(e)
-
-            hass.loop.call_later(0.1, do_scan_ble_devices)
         else:
             _LOGGER.info('Scanning has been completed')
-
-    @callback
-    def do_scan_ble_devices():
-        hass.async_add_job(scan_ble_devices)
 
     def stop_scanning(event):
         _LOGGER.info('Stop scanning BLE devices')
         hass.data[DOMAIN][CUTECARE_STATE] = False
         
+    # scan devices periodically
+    async_track_time_interval(hass, scan_ble_devices, timedelta(milliseconds=1100))
+
     # handle shutdown
     hass.bus.async_listen_once(
         EVENT_HOMEASSISTANT_STOP, stop_scanning)
@@ -128,17 +121,15 @@ class JDY08Device(CuteCareDevice):
     def set_data(self, data):
         """Parse service data."""
 
-        segments = list(map(''.join, zip(*[iter(data)]*4)))
-        if len(segments) > 6:
-            self._major = int(segments[3], 16)
-            self._minor = int(segments[4], 16)
-            self._temp = int(segments[6], 16) >> 8
-            self._humidity = int(segments[6], 16) & 0xFF
-
         segments = list(map(''.join, zip(*[iter(data)]*2)))
-        if len(segments) > 0:
+        if len(segments) > 2:
+            self._temp = int(segments[-3], 16)
+            self._humidity = int(segments[-2], 16)
             self._battery = int(segments[-1], 16)
 
-        _LOGGER.info('Major found %d' % (self._major))
-        
+        segments = list(map(''.join, zip(*[iter(data)]*4)))
+        if len(segments) > 4:
+            self._major = int(segments[3], 16)
+            self._minor = int(segments[4], 16)
+
         self.schedule_update_ha_state(True)
