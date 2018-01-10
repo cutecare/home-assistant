@@ -45,7 +45,6 @@ def async_setup(hass, config):
     def scan_ble_devices(now):
         if hass.data[DOMAIN][CUTECARE_STATE]:
             try:
-                _LOGGER.info('Looking for BLE')
                 scanner.process(1.0)
 
                 if hass.data[DOMAIN][CUTECARE_SCAN_TIMES] < 5:
@@ -71,7 +70,7 @@ def async_setup(hass, config):
         EVENT_HOMEASSISTANT_STOP, stop_scanning)
 
     # scan devices periodically
-    async_track_time_interval(hass, scan_ble_devices, timedelta(milliseconds=1020))
+    async_track_time_interval(hass, scan_ble_devices, timedelta(seconds=1))
 
     return True
 
