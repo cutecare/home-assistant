@@ -22,6 +22,7 @@ _LOGGER = logging.getLogger(__name__)
 DOMAIN = 'cutecare'
 CUTECARE_DEVICES = 'devices'
 CUTECARE_STATE = 'state'
+CUTECARE_SCAN_TIMES = 'scan-times'
 
 @asyncio.coroutine
 def async_setup(hass, config):
@@ -31,17 +32,25 @@ def async_setup(hass, config):
     # when processing events
     hass.data[DOMAIN] = {
         CUTECARE_DEVICES: defaultdict(list),
-        CUTECARE_STATE: True
+        CUTECARE_STATE: True,
+        CUTECARE_SCAN_TIMES: 0
     }
 
     _LOGGER.info('Start scanning of BLE devices')
 
+    scanner = Scanner(0).withDelegate(BLEScanDelegate(hass))
+    scanner.start()
+
     @asyncio.coroutine
     def scan_ble_devices(now):
-        scanner = Scanner(0).withDelegate(BLEScanDelegate(hass))
         if hass.data[DOMAIN][CUTECARE_STATE]:
             try:
-                scanner.scan(2)
+                if hass.data[DOMAIN][CUTECARE_SCAN_TIMES] < 3:
+                    scanner.process(1.0)
+                    hass.data[DOMAIN][CUTECARE_SCAN_TIMES] += 1
+                else:
+                    scanner.clean()
+                    hass.data[DOMAIN][CUTECARE_SCAN_TIMES] = 0
             except BTLEException as e:
                 _LOGGER.error(e)
         else:
@@ -50,13 +59,14 @@ def async_setup(hass, config):
     def stop_scanning(event):
         _LOGGER.info('Stop scanning BLE devices')
         hass.data[DOMAIN][CUTECARE_STATE] = False
+        scanner.stop()
         
     # handle shutdown
     hass.bus.async_listen_once(
         EVENT_HOMEASSISTANT_STOP, stop_scanning)
 
     # scan devices periodically
-    async_track_time_interval(hass, scan_ble_devices, timedelta(milliseconds=2100))
+    async_track_time_interval(hass, scan_ble_devices, timedelta(milliseconds=1100))
 
     return True
 
