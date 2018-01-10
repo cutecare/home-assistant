@@ -37,7 +37,7 @@ def async_setup(hass, config):
     _LOGGER.info('Start scanning of BLE devices')
 
     @asyncio.coroutine
-    def scan_ble_devices():
+    def scan_ble_devices(now):
         scanner = Scanner(0).withDelegate(BLEScanDelegate(hass))
         if hass.data[DOMAIN][CUTECARE_STATE]:
             try:
