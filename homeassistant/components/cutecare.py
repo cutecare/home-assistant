@@ -49,7 +49,7 @@ def async_setup(hass, config):
                     scanner.process(1.0)
                     hass.data[DOMAIN][CUTECARE_SCAN_TIMES] += 1
                 else:
-                    scanner.clean()
+                    scanner.clear()
                     hass.data[DOMAIN][CUTECARE_SCAN_TIMES] = 0
             except BTLEException as e:
                 _LOGGER.error(e)
