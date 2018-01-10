@@ -41,7 +41,7 @@ def async_setup(hass, config):
         scanner = Scanner(0).withDelegate(BLEScanDelegate(hass))
         if hass.data[DOMAIN][CUTECARE_STATE]:
             try:
-                scanner.scan(1.0)
+                scanner.scan(2.0)
             except BTLEException as e:
                 _LOGGER.error(e)
         else:
@@ -51,14 +51,13 @@ def async_setup(hass, config):
         _LOGGER.info('Stop scanning BLE devices')
         hass.data[DOMAIN][CUTECARE_STATE] = False
         
-    # scan devices periodically
-    async_track_time_interval(hass, scan_ble_devices, timedelta(milliseconds=1100))
-
     # handle shutdown
     hass.bus.async_listen_once(
         EVENT_HOMEASSISTANT_STOP, stop_scanning)
 
-    hass.async_add_job(scan_ble_devices)
+    # scan devices periodically
+    async_track_time_interval(hass, scan_ble_devices, timedelta(milliseconds=2100))
+
     return True
 
 class BLEScanDelegate(DefaultDelegate):
