@@ -45,12 +45,14 @@ def async_setup(hass, config):
     def scan_ble_devices(now):
         if hass.data[DOMAIN][CUTECARE_STATE]:
             try:
+                scanner.process(1.0)
+
                 if hass.data[DOMAIN][CUTECARE_SCAN_TIMES] < 3:
-                    scanner.process(1.0)
                     hass.data[DOMAIN][CUTECARE_SCAN_TIMES] += 1
                 else:
-                    scanner.clear()
                     hass.data[DOMAIN][CUTECARE_SCAN_TIMES] = 0
+                    scanner.clear()
+
             except BTLEException as e:
                 _LOGGER.error(e)
         else:
@@ -66,7 +68,7 @@ def async_setup(hass, config):
         EVENT_HOMEASSISTANT_STOP, stop_scanning)
 
     # scan devices periodically
-    async_track_time_interval(hass, scan_ble_devices, timedelta(milliseconds=1100))
+    async_track_time_interval(hass, scan_ble_devices, timedelta(milliseconds=1020))
 
     return True
 
