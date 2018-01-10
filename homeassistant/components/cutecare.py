@@ -45,9 +45,10 @@ def async_setup(hass, config):
     def scan_ble_devices(now):
         if hass.data[DOMAIN][CUTECARE_STATE]:
             try:
+                _LOGGER.info('Looking for BLE')
                 scanner.process(1.0)
 
-                if hass.data[DOMAIN][CUTECARE_SCAN_TIMES] < 3:
+                if hass.data[DOMAIN][CUTECARE_SCAN_TIMES] < 5:
                     hass.data[DOMAIN][CUTECARE_SCAN_TIMES] += 1
                 else:
                     hass.data[DOMAIN][CUTECARE_SCAN_TIMES] = 0
