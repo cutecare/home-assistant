@@ -172,11 +172,7 @@ class JDY08Device(CuteCareDevice):
 
         self.schedule_update_ha_state(True)
 
-    def set_gpio(pin, state):
-        hass.async_add_job(async_set_gpio, pin, state)
-
-    @asyncio.coroutine
-    def async_set_gpio(pin, state):
+    def set_gpio(self, pin, state):
         try:
             device = Peripheral(self.mac)
             device.writeCharacteristic(7, "E7F" + str(pin) + "01" if state else "E7F" + str(pin) + "00", False)
