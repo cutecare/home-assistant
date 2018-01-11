@@ -27,6 +27,7 @@ CUTECARE_SCAN_TIMES = 'scan-times'
 @asyncio.coroutine
 def async_setup(hass, config):
     """Set up the CuteCare component."""
+    import os
 
     # Allow entities to register themselves by mac address to be looked up
     # when processing events
@@ -38,6 +39,7 @@ def async_setup(hass, config):
 
     _LOGGER.info('Start scanning of BLE devices')
 
+    restart_bluetooth()
     scanner = Scanner(0).withDelegate(BLEScanDelegate(hass))
     scanner.start()
 
@@ -45,7 +47,7 @@ def async_setup(hass, config):
     def scan_ble_devices(now):
         if hass.data[DOMAIN][CUTECARE_STATE]:
             try:
-                if hass.data[DOMAIN][CUTECARE_SCAN_TIMES] < 5:
+                if hass.data[DOMAIN][CUTECARE_SCAN_TIMES] < 4:
                     hass.data[DOMAIN][CUTECARE_SCAN_TIMES] += 1
                 else:
                     hass.data[DOMAIN][CUTECARE_SCAN_TIMES] = 0
@@ -54,13 +56,14 @@ def async_setup(hass, config):
                     scanner.start()
 
                 scanner.process(1.0)
-                
+
             except BTLEException as e:
                 _LOGGER.error(e)
                 try:
                     scanner.start()
                 except BTLEException as e:
                     _LOGGER.error(e)
+                    restart_bluetooth()
         else:
             _LOGGER.info('Scanning has been completed')
 
@@ -68,6 +71,9 @@ def async_setup(hass, config):
         _LOGGER.info('Stop scanning BLE devices')
         hass.data[DOMAIN][CUTECARE_STATE] = False
         scanner.stop()
+
+    def restart_bluetooth():
+        os.execv("/etc/init.d/bluetooth", ["/etc/init.d/bluetooth", "restart"])
         
     # handle shutdown
     hass.bus.async_listen_once(
