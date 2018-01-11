@@ -47,7 +47,7 @@ def async_setup(hass, config):
             try:
                 scanner.process(1.0)
 
-                if hass.data[DOMAIN][CUTECARE_SCAN_TIMES] < 5:
+                if hass.data[DOMAIN][CUTECARE_SCAN_TIMES] < 3:
                     hass.data[DOMAIN][CUTECARE_SCAN_TIMES] += 1
                 else:
                     hass.data[DOMAIN][CUTECARE_SCAN_TIMES] = 0
@@ -57,6 +57,10 @@ def async_setup(hass, config):
 
             except BTLEException as e:
                 _LOGGER.error(e)
+                try:
+                    scanner.start()
+                except BTLEException as e:
+                    _LOGGER.error(e)
         else:
             _LOGGER.info('Scanning has been completed')
 
