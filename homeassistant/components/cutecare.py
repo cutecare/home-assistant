@@ -175,7 +175,9 @@ class JDY08Device(CuteCareDevice):
     def set_gpio(self, pin, state):
         try:
             device = Peripheral(self.mac)
-            device.writeCharacteristic(7, "E7F" + str(pin) + "01" if state else "E7F" + str(pin) + "00", False)
+            onBytes = [231, 240 + pin, 1]
+            offBytes = [231, 240 + pin, 0]
+            device.writeCharacteristic( 7, onBytes if state else offBytes), False)
             device.disconnect()
         except BTLEException as e:
             _LOGGER.error("Unable set GPIO of JDY08: %s" % e)
