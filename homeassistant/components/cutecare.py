@@ -45,9 +45,7 @@ def async_setup(hass, config):
     def scan_ble_devices(now):
         if hass.data[DOMAIN][CUTECARE_STATE]:
             try:
-                scanner.process(1.0)
-
-                if hass.data[DOMAIN][CUTECARE_SCAN_TIMES] < 3:
+                if hass.data[DOMAIN][CUTECARE_SCAN_TIMES] < 5:
                     hass.data[DOMAIN][CUTECARE_SCAN_TIMES] += 1
                 else:
                     hass.data[DOMAIN][CUTECARE_SCAN_TIMES] = 0
@@ -55,6 +53,8 @@ def async_setup(hass, config):
                     scanner.stop()
                     scanner.start()
 
+                scanner.process(1.0)
+                
             except BTLEException as e:
                 _LOGGER.error(e)
                 try:
@@ -87,12 +87,12 @@ class BLEScanDelegate(DefaultDelegate):
         if dev.addr in self._hass.data[DOMAIN][CUTECARE_DEVICES]:
             entity = self._hass.data[DOMAIN][CUTECARE_DEVICES][dev.addr]
             for (adtype, description, value) in dev.getScanData():
-                if adtype == 22:
-                    _LOGGER.info('BLE device service message has been found %s' % (value))
-                    entity.set_data(value)
                 if adtype == 255:
                     _LOGGER.info('BLE device manufacturer has been found %s' % (value))
                     entity.set_manufacturer_data(value)
+                if adtype == 22:
+                    _LOGGER.info('BLE device service message has been found %s' % (value))
+                    entity.set_data(value)
 
 
 class CuteCareDevice(Entity):
@@ -156,7 +156,7 @@ class JDY08Device(CuteCareDevice):
 
     def set_manufacturer_data(self, data):
         """Parse manufacturer data."""
-        
+
         segments = list(map(''.join, zip(*[iter(data)]*4)))
         if len(segments) > 11:
             self._major = int(segments[10], 16)
