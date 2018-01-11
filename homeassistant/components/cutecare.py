@@ -13,7 +13,7 @@ from homeassistant.const import (EVENT_HOMEASSISTANT_STOP)
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.entity import Entity
 from homeassistant.helpers.event import async_track_time_interval
-from bluepy.btle import Scanner, DefaultDelegate, BTLEException
+from bluepy.btle import Scanner, Peripheral, DefaultDelegate, BTLEException
 
 REQUIREMENTS = ['cutecare-py']
 
@@ -82,7 +82,7 @@ def async_setup(hass, config):
     scanner.start()
 
     # scan devices periodically
-    async_track_time_interval(hass, scan_ble_devices, timedelta(seconds=1))
+    async_track_time_interval(hass, scan_ble_devices, timedelta(seconds=2))
 
     return True
 
@@ -97,10 +97,10 @@ class BLEScanDelegate(DefaultDelegate):
             for (adtype, description, value) in dev.getScanData():
                 if adtype == 255:
                     _LOGGER.info('BLE device manufacturer has been found %s' % (value))
-                    entity.set_manufacturer_data(value)
+                    entity.parse_manufacturer_data(value)
                 if adtype == 22:
                     _LOGGER.info('BLE device service message has been found %s' % (value))
-                    entity.set_data(value)
+                    entity.parse_service_data(value)
 
 
 class CuteCareDevice(Entity):
@@ -146,7 +146,7 @@ class JDY08Device(CuteCareDevice):
     def battery(self):
         return self._battery
 
-    def set_data(self, data):
+    def parse_service_data(self, data):
         """Parse service data."""
 
         segments = list(map(''.join, zip(*[iter(data)]*2)))
@@ -162,7 +162,7 @@ class JDY08Device(CuteCareDevice):
 
         self.schedule_update_ha_state(True)
 
-    def set_manufacturer_data(self, data):
+    def parse_manufacturer_data(self, data):
         """Parse manufacturer data."""
 
         segments = list(map(''.join, zip(*[iter(data)]*4)))
@@ -171,3 +171,15 @@ class JDY08Device(CuteCareDevice):
             self._minor = int(segments[11], 16)
 
         self.schedule_update_ha_state(True)
+
+    def set_gpio(pin, state):
+        hass.async_add_job(async_set_gpio, pin, state)
+
+    @asyncio.coroutine
+    def async_set_gpio(pin, state):
+        try:
+            device = Peripheral(self.mac)
+            device.writeCharacteristic(7, "E7F" + str(pin) + "01" if state else "E7F" + str(pin) + "00", False)
+            device.disconnect()
+        except BTLEException as e:
+            _LOGGER.error("Unable set GPIO of JDY08: %s" % e)
