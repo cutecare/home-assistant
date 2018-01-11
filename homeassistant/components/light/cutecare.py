@@ -18,6 +18,10 @@ class CuteCareLightProxy(JDY08Device, Light):
         self._name = name
         JDY08Device.__init__(self, hass, mac)
 
+    def is_on(self) -> bool:
+        """Return True if entity is on."""
+        raise False
+
     @property
     def assumed_state(self):
         return True
