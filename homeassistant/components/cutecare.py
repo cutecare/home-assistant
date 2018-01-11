@@ -69,7 +69,7 @@ def async_setup(hass, config):
 
     def restart_bluetooth():
         import os
-        os.spawnv(P_NOWAIT, "/etc/init.d/bluetooth", ["/etc/init.d/bluetooth", "restart"])
+        os.spawnv(os.P_NOWAIT, "/etc/init.d/bluetooth", ["/etc/init.d/bluetooth", "restart"])
 
     # handle shutdown
     hass.bus.async_listen_once(
