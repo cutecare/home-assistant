@@ -90,6 +90,9 @@ class BLEScanDelegate(DefaultDelegate):
                 if adtype == 22:
                     _LOGGER.info('BLE device service message has been found %s' % (value))
                     entity.set_data(value)
+                if adtype == 255:
+                    _LOGGER.info('BLE device manufacturer has been found %s' % (value))
+                    entity.set_manufacturer_data(value)
 
 
 class CuteCareDevice(Entity):
@@ -148,5 +151,15 @@ class JDY08Device(CuteCareDevice):
         if len(segments) > 4:
             self._major = int(segments[3], 16)
             self._minor = int(segments[4], 16)
+
+        self.schedule_update_ha_state(True)
+
+    def set_manufacturer_data(self, data):
+        """Parse manufacturer data."""
+        
+        segments = list(map(''.join, zip(*[iter(data)]*4)))
+        if len(segments) > 11:
+            self._major = int(segments[10], 16)
+            self._minor = int(segments[11], 16)
 
         self.schedule_update_ha_state(True)
