@@ -21,6 +21,7 @@ DOMAIN = 'cutecare'
 CUTECARE_DEVICES = 'devices'
 CUTECARE_STATE = 'state'
 CUTECARE_SCAN_TIMES = 'scan-times'
+CUTECARE_RESTART = 'restart-flag'
 
 @asyncio.coroutine
 def async_setup(hass, config):
@@ -31,6 +32,7 @@ def async_setup(hass, config):
     hass.data[DOMAIN] = {
         CUTECARE_DEVICES: defaultdict(list),
         CUTECARE_STATE: True,
+        CUTECARE_RESTART: False,
         CUTECARE_SCAN_TIMES: 0
     }
 
@@ -55,8 +57,9 @@ def async_setup(hass, config):
                 try:
                     scanner.start()
                 except BTLEException as e:
+                    hass.data[DOMAIN][CUTECARE_RESTART] = True
                     _LOGGER.error(e)
-                    restart_bluetooth()
+
         else:
             _LOGGER.info('Scanning has been completed')
 
@@ -67,7 +70,11 @@ def async_setup(hass, config):
 
     def restart_bluetooth():
         import os
-        os.spawnv(os.P_NOWAIT, "/etc/init.d/bluetooth", ["/etc/init.d/bluetooth", "restart"])
+        if hass.data[DOMAIN][CUTECARE_RESTART]:
+            hass.data[DOMAIN][CUTECARE_RESTART] = False
+            os.spawnv(os.P_WAIT, "hciconfig", ["hciconfig", "hci0", "down"])
+            os.spawnv(os.P_WAIT, "hciconfig", ["hciconfig", "hci0", "up"])
+            os.spawnv(os.P_NOWAIT, "/etc/init.d/bluetooth", ["/etc/init.d/bluetooth", "restart"])
 
     # handle shutdown
     hass.bus.async_listen_once(
@@ -81,6 +88,9 @@ def async_setup(hass, config):
 
     # scan devices periodically
     async_track_time_interval(hass, scan_ble_devices, timedelta(seconds=1))
+
+    # restart bluetooth services if needed
+    async_track_time_interval(hass, restart_bluetooth, timedelta(seconds=10))
 
     return True
 
