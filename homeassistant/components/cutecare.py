@@ -222,8 +222,8 @@ class CC41ADevice(CuteCareDevice):
         """ Update sensor value """
 
         try:
-            p = Peripheral.withDelegate(BLEPeripheralDelegate(self))
-            p.connect(self.mac)
+            p = Peripheral(self.mac)
+            p.withDelegate(BLEPeripheralDelegate(self))
             p.waitForNotifications(5)
         
         except BTLEException as e:
