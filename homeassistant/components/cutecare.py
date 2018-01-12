@@ -70,11 +70,13 @@ def async_setup(hass, config):
 
     def restart_bluetooth(now):
         import os
+        
         if hass.data[DOMAIN][CUTECARE_RESTART]:
             hass.data[DOMAIN][CUTECARE_RESTART] = False
             os.spawnv(os.P_WAIT, "hciconfig", ["hciconfig", "hci0", "down"])
             os.spawnv(os.P_WAIT, "hciconfig", ["hciconfig", "hci0", "up"])
             os.spawnv(os.P_NOWAIT, "/etc/init.d/bluetooth", ["/etc/init.d/bluetooth", "restart"])
+            _LOGGER.info('Bluetooth services have been restarted')
 
     # handle shutdown
     hass.bus.async_listen_once(
@@ -196,3 +198,41 @@ class JDY08Device(CuteCareDevice):
 
         except BTLEException as e:
             _LOGGER.error("Unable set GPIO of JDY08: %s" % e)
+
+
+class BLEPeripheralDelegate(DefaultDelegate):
+    def __init__(self, device):
+        self.device = device
+        DefaultDelegate.__init__(self)
+
+    def handleNotification(self, cHandle, data):
+        self.device.parse_data(cHandle, data)
+
+
+class CC41ADevice(CuteCareDevice):
+    def __init__(self, hass, mac):
+        self._value = 0
+        CuteCareDevice.__init__(self, hass, mac)
+
+    @property
+    def value(self):
+        return self._value
+
+    def update(self):
+        """ Update sensor value """
+
+        try:
+            p = Peripheral.withDelegate(BLEPeripheralDelegate(self))
+            p.connect(self.mac)
+            p.waitForNotifications(5)
+        
+        except BTLEException as e:
+            _LOGGER.error("Unable receive BLE notification: %s" % e)
+
+    def parse_data(self, cHandle, data):
+        """Parse data."""
+
+        byte_list = list(data)
+        self._value = byte_list[0] * 256 + byte_list[1]
+
+        _LOGGER.info("CC41-A notification has been received: %d" % (self._value))
