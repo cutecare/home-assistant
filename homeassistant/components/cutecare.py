@@ -40,7 +40,7 @@ def async_setup(hass, config):
 
         if hass.data[DOMAIN][CUTECARE_STATE]:
             try:
-                if hass.data[DOMAIN][CUTECARE_SCAN_TIMES] < 4:
+                if hass.data[DOMAIN][CUTECARE_SCAN_TIMES] < 3:
                     hass.data[DOMAIN][CUTECARE_SCAN_TIMES] += 1
                 else:
                     hass.data[DOMAIN][CUTECARE_SCAN_TIMES] = 0
@@ -80,7 +80,7 @@ def async_setup(hass, config):
     scanner.start()
 
     # scan devices periodically
-    async_track_time_interval(hass, scan_ble_devices, timedelta(seconds=2))
+    async_track_time_interval(hass, scan_ble_devices, timedelta(seconds=1))
 
     return True
 
@@ -91,7 +91,6 @@ class BLEScanDelegate(DefaultDelegate):
 
     def handleDiscovery(self, dev, isNewDev, isNewData):
         address = dev.addr.upper()
-        _LOGGER.info('Discovered %s' % (address))
         if address in self._hass.data[DOMAIN][CUTECARE_DEVICES]:
             entity = self._hass.data[DOMAIN][CUTECARE_DEVICES][address]
             for (adtype, description, value) in dev.getScanData():
