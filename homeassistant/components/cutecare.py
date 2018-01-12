@@ -212,6 +212,7 @@ class BLEPeripheralDelegate(DefaultDelegate):
 class CC41ADevice(CuteCareDevice):
     def __init__(self, hass, mac):
         self._value = 0
+        self._readonly = True
         CuteCareDevice.__init__(self, hass, mac)
 
     @property
@@ -224,8 +225,10 @@ class CC41ADevice(CuteCareDevice):
         try:
             p = Peripheral(self.mac)
             p.withDelegate(BLEPeripheralDelegate(self))
+            self._readonly = True
             p.waitForNotifications(3)
-            return p.waitForNotifications(3)
+            self._readonly = False
+            return p.waitForNotifications(2)
         
         except BTLEException as e:
             _LOGGER.error("Unable receive BLE notification: %s" % e)
@@ -234,7 +237,9 @@ class CC41ADevice(CuteCareDevice):
 
     def parse_data(self, cHandle, data):
         """Parse data."""
-
+        if self._readonly:
+            return
+        
         byte_list = list(data)
         self._value = byte_list[0] * 256 + byte_list[1]
 
