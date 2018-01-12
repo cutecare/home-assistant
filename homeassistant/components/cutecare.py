@@ -15,8 +15,6 @@ from homeassistant.helpers.entity import Entity
 from homeassistant.helpers.event import async_track_time_interval
 from bluepy.btle import Scanner, Peripheral, DefaultDelegate, BTLEException
 
-REQUIREMENTS = ['cutecare-py']
-
 _LOGGER = logging.getLogger(__name__)
 
 DOMAIN = 'cutecare'
@@ -92,8 +90,10 @@ class BLEScanDelegate(DefaultDelegate):
         DefaultDelegate.__init__(self)
 
     def handleDiscovery(self, dev, isNewDev, isNewData):
-        if dev.addr in self._hass.data[DOMAIN][CUTECARE_DEVICES]:
-            entity = self._hass.data[DOMAIN][CUTECARE_DEVICES][dev.addr]
+        address = dev.addr.upper()
+        _LOGGER.info('Discovered %s' % (address))
+        if address in self._hass.data[DOMAIN][CUTECARE_DEVICES]:
+            entity = self._hass.data[DOMAIN][CUTECARE_DEVICES][address]
             for (adtype, description, value) in dev.getScanData():
                 if adtype == 255:
                     _LOGGER.info('BLE device manufacturer has been found %s' % (value))
@@ -109,8 +109,8 @@ class CuteCareDevice(Entity):
     def __init__(self, hass, mac):
         """Initialize the device."""
         self.hass = hass
-        self.mac = mac
-        self.hass.data[DOMAIN][CUTECARE_DEVICES][mac] = self
+        self.mac = mac.upper()
+        self.hass.data[DOMAIN][CUTECARE_DEVICES][self.mac] = self
 
 
 class JDY08Device(CuteCareDevice):
@@ -173,11 +173,18 @@ class JDY08Device(CuteCareDevice):
         self.schedule_update_ha_state(True)
 
     def set_gpio(self, pin, state):
+        
         try:
             device = Peripheral(self.mac)
             onBytes = bytes([231, 240 + pin, 1])
             offBytes = bytes([231, 240 + pin, 0])
-            device.writeCharacteristic( 7, onBytes if state else offBytes, False)
+            
+            attempts = 3
+            while attempts > 0:
+                device.writeCharacteristic( 7, onBytes if state else offBytes, False)
+                attempts -= 1
+
             device.disconnect()
+
         except BTLEException as e:
             _LOGGER.error("Unable set GPIO of JDY08: %s" % e)
