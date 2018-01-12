@@ -224,7 +224,8 @@ class CC41ADevice(CuteCareDevice):
         try:
             p = Peripheral(self.mac)
             p.withDelegate(BLEPeripheralDelegate(self))
-            return p.waitForNotifications(5)
+            p.waitForNotifications(3)
+            return p.waitForNotifications(3)
         
         except BTLEException as e:
             _LOGGER.error("Unable receive BLE notification: %s" % e)
