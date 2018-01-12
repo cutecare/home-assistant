@@ -224,10 +224,12 @@ class CC41ADevice(CuteCareDevice):
         try:
             p = Peripheral(self.mac)
             p.withDelegate(BLEPeripheralDelegate(self))
-            p.waitForNotifications(5)
+            return p.waitForNotifications(5)
         
         except BTLEException as e:
             _LOGGER.error("Unable receive BLE notification: %s" % e)
+        
+        return False
 
     def parse_data(self, cHandle, data):
         """Parse data."""
