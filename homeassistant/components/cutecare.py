@@ -32,7 +32,7 @@ def async_setup(hass, config):
     hass.data[DOMAIN] = {
         CUTECARE_DEVICES: defaultdict(list),
         CUTECARE_STATE: True,
-        CUTECARE_RESTART: False,
+        CUTECARE_RESTART: True,
         CUTECARE_SCAN_TIMES: 0
     }
 
@@ -82,7 +82,6 @@ def async_setup(hass, config):
 
     _LOGGER.info('Start scanning of BLE devices')
 
-    restart_bluetooth()
     scanner = Scanner(0).withDelegate(BLEScanDelegate(hass))
     scanner.start()
 
