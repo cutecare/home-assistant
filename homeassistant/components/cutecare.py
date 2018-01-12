@@ -68,7 +68,7 @@ def async_setup(hass, config):
         hass.data[DOMAIN][CUTECARE_STATE] = False
         scanner.stop()
 
-    def restart_bluetooth():
+    def restart_bluetooth(now):
         import os
         if hass.data[DOMAIN][CUTECARE_RESTART]:
             hass.data[DOMAIN][CUTECARE_RESTART] = False
