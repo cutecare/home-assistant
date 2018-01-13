@@ -40,6 +40,9 @@ def async_setup(hass, config):
     def scan_ble_devices(now):
         """Main loop where BLE devices are scanned."""
 
+        if hass.data[DOMAIN][CUTECARE_RESTART]:
+            return
+
         if hass.data[DOMAIN][CUTECARE_STATE]:
             try:
                 if hass.data[DOMAIN][CUTECARE_SCAN_TIMES] < 3:
@@ -72,11 +75,13 @@ def async_setup(hass, config):
         import os
         
         if hass.data[DOMAIN][CUTECARE_RESTART]:
-            hass.data[DOMAIN][CUTECARE_RESTART] = False
             os.spawnv(os.P_WAIT, "hciconfig", ["hciconfig", "hci0", "down"])
             os.spawnv(os.P_WAIT, "hciconfig", ["hciconfig", "hci0", "up"])
-            os.spawnv(os.P_NOWAIT, "/etc/init.d/bluetooth", ["/etc/init.d/bluetooth", "restart"])
+            os.spawnv(os.P_NOWAIT, "/etc/init.d/bluetooth", 
+                ["/etc/init.d/bluetooth", "restart"])
+            
             _LOGGER.info('Bluetooth services have been restarted')
+            hass.data[DOMAIN][CUTECARE_RESTART] = False
 
     # handle shutdown
     hass.bus.async_listen_once(
@@ -87,7 +92,7 @@ def async_setup(hass, config):
     scanner = Scanner(0).withDelegate(BLEScanDelegate(hass))
     scanner.start()
 
-    # scan devices periodically
+    # look for advertising messages periodically
     async_track_time_interval(hass, scan_ble_devices, timedelta(seconds=1))
 
     # restart bluetooth services if needed
@@ -189,7 +194,7 @@ class JDY08Device(CuteCareDevice):
             onBytes = bytes([231, 240 + pin, 1])
             offBytes = bytes([231, 240 + pin, 0])
             
-            attempts = 3
+            attempts = 5
             while attempts > 0:
                 device.writeCharacteristic( 7, onBytes if state else offBytes, False)
                 attempts -= 1
@@ -211,13 +216,12 @@ class BLEPeripheralDelegate(DefaultDelegate):
 
 class CC41ADevice(CuteCareDevice):
     def __init__(self, hass, mac):
-        self._value = 0
-        self._readonly = True
+        self._valuesList = []
         CuteCareDevice.__init__(self, hass, mac)
 
     @property
     def value(self):
-        return self._value
+        return self._valuesList[-1] if len(self._valuesList) > 0 else 0
 
     def update(self):
         """ Update sensor value """
@@ -225,10 +229,13 @@ class CC41ADevice(CuteCareDevice):
         try:
             p = Peripheral(self.mac)
             p.withDelegate(BLEPeripheralDelegate(self))
-            self._readonly = True
-            p.waitForNotifications(3)
-            self._readonly = False
-            return p.waitForNotifications(2)
+            
+            notifications = 3
+            while notifications > 0:
+                p.waitForNotifications(2)
+                notifications -= 1
+            
+            return len(self._valuesList) > 1
         
         except BTLEException as e:
             _LOGGER.error("Unable receive BLE notification: %s" % e)
@@ -237,10 +244,8 @@ class CC41ADevice(CuteCareDevice):
 
     def parse_data(self, cHandle, data):
         """Parse data."""
-        if self._readonly:
-            return
-        
-        byte_list = list(data)
-        self._value = byte_list[0] * 256 + byte_list[1]
 
-        _LOGGER.info("CC41-A notification has been received: %d" % (self._value))
+        byte_list = list(data)
+        self._valuesList.append(byte_list[0] * 256 + byte_list[1])
+
+        _LOGGER.info("CC41-A notification has been received: %d" % (self._valuesList[-1]))
