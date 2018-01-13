@@ -6,7 +6,7 @@ https://home-assistant.io/components/cutecare/
 """
 import asyncio
 from collections import defaultdict
-from datetime import timedelta
+from datetime import timedelta, datetime
 import logging 
 
 from homeassistant.const import (EVENT_HOMEASSISTANT_STOP)
@@ -77,7 +77,8 @@ def async_setup(hass, config):
         if hass.data[DOMAIN][CUTECARE_RESTART]:
             os.spawnv(os.P_WAIT, "hciconfig", ["hciconfig", "hci0", "down"])
             os.spawnv(os.P_WAIT, "hciconfig", ["hciconfig", "hci0", "up"])
-            os.spawnv(os.P_NOWAIT, "/etc/init.d/bluetooth", 
+            os.spawnv(os.P_WAIT, "hciconfig", ["hciconfig", "hci0", "up"])
+            os.spawnv(os.P_WAIT, "/etc/init.d/bluetooth", 
                 ["/etc/init.d/bluetooth", "restart"])
             
             _LOGGER.info('Bluetooth services have been restarted')
@@ -89,8 +90,18 @@ def async_setup(hass, config):
 
     _LOGGER.info('Start scanning of BLE devices')
 
-    scanner = Scanner(0).withDelegate(BLEScanDelegate(hass))
-    scanner.start()
+    attempts = 3
+    while attempts > 0:
+        attempts -= 1
+
+        try:
+            scanner = Scanner(0).withDelegate(BLEScanDelegate(hass))
+            scanner.start()
+            break
+
+        except BTLEException as e:
+            _LOGGER.error(e)
+            restart_bluetooth(datetime.now())
 
     # look for advertising messages periodically
     async_track_time_interval(hass, scan_ble_devices, timedelta(milliseconds=1500))
@@ -189,20 +200,25 @@ class JDY08Device(CuteCareDevice):
 
     def set_gpio(self, pin, state):
         
-        try:
-            device = Peripheral(self.mac)
-            onBytes = bytes([231, 240 + pin, 1])
-            offBytes = bytes([231, 240 + pin, 0])
-            
-            attempts = 5
-            while attempts > 0:
-                device.writeCharacteristic( 7, onBytes if state else offBytes, False)
-                attempts -= 1
+        retries = 5
+        while retries > 0:
+            retries -= 1
 
-            device.disconnect()
+            try:
+                device = Peripheral(self.mac)
+                onBytes = bytes([231, 240 + pin, 1])
+                offBytes = bytes([231, 240 + pin, 0])
+                
+                attempts = 3
+                while attempts > 0:
+                    device.writeCharacteristic( 7, onBytes if state else offBytes, False)
+                    attempts -= 1
 
-        except BTLEException as e:
-            _LOGGER.error("Unable set GPIO of JDY08: %s" % e)
+                device.disconnect()
+                break
+
+            except BTLEException as e:
+                _LOGGER.error("Unable set GPIO of JDY08: %s" % e)
 
 
 class BLEPeripheralDelegate(DefaultDelegate):
@@ -226,21 +242,25 @@ class CC41ADevice(CuteCareDevice):
     def update(self):
         """ Update sensor value """
 
-        try:
-            self._valuesList = []
-            notifications = 3
+        attempts = 3
+        while attempts > 0:
+            attempts -= 1
 
-            p = Peripheral(self.mac)
-            p.withDelegate(BLEPeripheralDelegate(self))
+            try:
+                self._valuesList = []
+                notifications = 3
 
-            while notifications > 0:
-                p.waitForNotifications(2)
-                notifications -= 1
+                p = Peripheral(self.mac)
+                p.withDelegate(BLEPeripheralDelegate(self))
+
+                while notifications > 0:
+                    p.waitForNotifications(2)
+                    notifications -= 1
+                
+                return len(self._valuesList) > 1
             
-            return len(self._valuesList) > 1
-        
-        except BTLEException as e:
-            _LOGGER.error("Unable receive BLE notification: %s" % e)
+            except BTLEException as e:
+                _LOGGER.error("Unable receive BLE notification: %s" % e)
         
         return False
 
