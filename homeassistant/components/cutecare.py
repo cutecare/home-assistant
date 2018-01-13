@@ -93,7 +93,7 @@ def async_setup(hass, config):
     scanner.start()
 
     # look for advertising messages periodically
-    async_track_time_interval(hass, scan_ble_devices, timedelta(seconds=1))
+    async_track_time_interval(hass, scan_ble_devices, timedelta(milliseconds=1500))
 
     # restart bluetooth services if needed
     async_track_time_interval(hass, restart_bluetooth, timedelta(seconds=10))
