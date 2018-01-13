@@ -227,10 +227,12 @@ class CC41ADevice(CuteCareDevice):
         """ Update sensor value """
 
         try:
+            self._valuesList = []
+            notifications = 3
+
             p = Peripheral(self.mac)
             p.withDelegate(BLEPeripheralDelegate(self))
-            
-            notifications = 3
+
             while notifications > 0:
                 p.waitForNotifications(2)
                 notifications -= 1
