@@ -70,17 +70,17 @@ def async_setup(hass, config):
     def restart_bluetooth():
         import os
 
-        attempts = 5
-        while attempts > 0:
-            attempts -= 1      
+        retries = 3
+        while retries > 0:
+            retries -= 1      
             
             try:
                 Scanner(CUTECARE_DEVICE).scan(1.0)
                 break
 
             except BTLEException as e:
-                os.system("sudo hciconfig hci" + str(CUTECARE_DEVICE) + " down")
-                os.system("sudo hciconfig hci" + str(CUTECARE_DEVICE) + " up")
+                os.system("hciconfig hci" + str(CUTECARE_DEVICE) + " down")
+                os.system("hciconfig hci" + str(CUTECARE_DEVICE) + " up")
                 os.system("service bluetooth restart")
 
         _LOGGER.info('Bluetooth services have been restarted')
