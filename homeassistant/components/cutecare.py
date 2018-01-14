@@ -208,8 +208,14 @@ class JDY08Device(CuteCareDevice):
 
             try:
                 device = Peripheral(self.mac)
-                device.writeCharacteristic( 7, onBytes if state else offBytes, False)
+
+                writeAttempts = 5
+                while writeAttempts > 0:
+                    writeAttempts -= 1
+                    device.writeCharacteristic( 7, onBytes if state else offBytes, False)
+
                 device.disconnect()
+                _LOGGER.info("GPIO of JDY08 has been set")
                 break
 
             except BTLEException as e:
