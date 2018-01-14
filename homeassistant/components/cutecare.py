@@ -79,17 +79,14 @@ def async_setup(hass, config):
                 break
 
             except BTLEException as e:
-                os.spawnv(os.P_WAIT, "hciconfig", 
-                    ["hciconfig", "hci" + str(CUTECARE_DEVICE), "down"])
-                os.spawnv(os.P_WAIT, "hciconfig", 
-                    ["hciconfig", "hci" + str(CUTECARE_DEVICE), "up"])
+                os.system("sudo hciconfig hci" + str(CUTECARE_DEVICE) + " down")
+                os.system("sudo hciconfig hci" + str(CUTECARE_DEVICE) + " up")
+                os.system("service bluetooth restart")
 
-        os.spawnv(os.P_WAIT, "/etc/init.d/bluetooth", 
-            ["/etc/init.d/bluetooth", "restart"])
-        
         _LOGGER.info('Bluetooth services have been restarted')
 
 
+    # initialize BLE advertising mode
     _LOGGER.info('Start scanning of BLE devices')
 
     # handle shutdown
