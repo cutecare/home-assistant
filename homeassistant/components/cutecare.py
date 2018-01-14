@@ -21,7 +21,7 @@ DOMAIN = 'cutecare'
 CUTECARE_DEVICES = 'devices'
 CUTECARE_STATE = 'state'
 CUTECARE_SCAN_TIMES = 'scan-times'
-CUTECARE_RESTART = 'restart-flag'
+CUTECARE_DEVICE = 0
 
 @asyncio.coroutine
 def async_setup(hass, config):
@@ -32,16 +32,12 @@ def async_setup(hass, config):
     hass.data[DOMAIN] = {
         CUTECARE_DEVICES: defaultdict(list),
         CUTECARE_STATE: True,
-        CUTECARE_RESTART: True,
         CUTECARE_SCAN_TIMES: 0
     }
 
     @asyncio.coroutine
     def scan_ble_devices(now):
         """Main loop where BLE devices are scanned."""
-
-        if hass.data[DOMAIN][CUTECARE_RESTART]:
-            return
 
         if hass.data[DOMAIN][CUTECARE_STATE]:
             try:
@@ -60,8 +56,8 @@ def async_setup(hass, config):
                 try:
                     scanner.start()
                 except BTLEException as e:
-                    hass.data[DOMAIN][CUTECARE_RESTART] = True
                     _LOGGER.error(e)
+                    restart_bluetooth()
 
         else:
             _LOGGER.info('Scanning has been completed')
@@ -71,43 +67,49 @@ def async_setup(hass, config):
         hass.data[DOMAIN][CUTECARE_STATE] = False
         scanner.stop()
 
-    def restart_bluetooth(now):
+    def restart_bluetooth():
         import os
-        
-        if hass.data[DOMAIN][CUTECARE_RESTART]:
-            os.spawnv(os.P_WAIT, "hciconfig", ["hciconfig", "hci0", "down"])
-            os.spawnv(os.P_WAIT, "hciconfig", ["hciconfig", "hci0", "up"])
-            os.spawnv(os.P_WAIT, "hciconfig", ["hciconfig", "hci0", "up"])
-            os.spawnv(os.P_WAIT, "/etc/init.d/bluetooth", 
-                ["/etc/init.d/bluetooth", "restart"])
-            
-            _LOGGER.info('Bluetooth services have been restarted')
-            hass.data[DOMAIN][CUTECARE_RESTART] = False
 
-    # handle shutdown
-    hass.bus.async_listen_once(
-        EVENT_HOMEASSISTANT_STOP, stop_scanning)
+        attempts = 5
+        while attempts > 0:
+            attempts -= 1      
+            
+            try:
+                Scanner(CUTECARE_DEVICE).scan(1.0)
+                break
+
+            except BTLEException as e:
+                os.spawnv(os.P_WAIT, "hciconfig", 
+                    ["hciconfig", "hci" + str(CUTECARE_DEVICE), "down"])
+                os.spawnv(os.P_WAIT, "hciconfig", 
+                    ["hciconfig", "hci" + str(CUTECARE_DEVICE), "up"])
+
+        os.spawnv(os.P_WAIT, "/etc/init.d/bluetooth", 
+            ["/etc/init.d/bluetooth", "restart"])
+        
+        _LOGGER.info('Bluetooth services have been restarted')
+
 
     _LOGGER.info('Start scanning of BLE devices')
+
+    # handle shutdown
+    hass.bus.async_listen_once(EVENT_HOMEASSISTANT_STOP, stop_scanning)
 
     attempts = 3
     while attempts > 0:
         attempts -= 1
 
         try:
-            scanner = Scanner(0).withDelegate(BLEScanDelegate(hass))
+            scanner = Scanner(CUTECARE_DEVICE).withDelegate(BLEScanDelegate(hass))
             scanner.start()
             break
 
         except BTLEException as e:
             _LOGGER.error(e)
-            restart_bluetooth(datetime.now())
+            restart_bluetooth()
 
     # look for advertising messages periodically
     async_track_time_interval(hass, scan_ble_devices, timedelta(milliseconds=1500))
-
-    # restart bluetooth services if needed
-    async_track_time_interval(hass, restart_bluetooth, timedelta(seconds=10))
 
     return True
 
@@ -200,20 +202,16 @@ class JDY08Device(CuteCareDevice):
 
     def set_gpio(self, pin, state):
         
+        onBytes = bytes([231, 240 + pin, 1])
+        offBytes = bytes([231, 240 + pin, 0])
+
         retries = 5
         while retries > 0:
             retries -= 1
 
             try:
                 device = Peripheral(self.mac)
-                onBytes = bytes([231, 240 + pin, 1])
-                offBytes = bytes([231, 240 + pin, 0])
-                
-                attempts = 3
-                while attempts > 0:
-                    device.writeCharacteristic( 7, onBytes if state else offBytes, False)
-                    attempts -= 1
-
+                device.writeCharacteristic( 7, onBytes if state else offBytes, False)
                 device.disconnect()
                 break
 
@@ -248,15 +246,14 @@ class CC41ADevice(CuteCareDevice):
 
             try:
                 self._valuesList = []
+                p = Peripheral(self.mac).withDelegate(BLEPeripheralDelegate(self))
+
                 notifications = 3
-
-                p = Peripheral(self.mac)
-                p.withDelegate(BLEPeripheralDelegate(self))
-
                 while notifications > 0:
                     p.waitForNotifications(2)
                     notifications -= 1
                 
+                p.disconnect()
                 return len(self._valuesList) > 1
             
             except BTLEException as e:
