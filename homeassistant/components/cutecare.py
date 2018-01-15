@@ -137,6 +137,12 @@ class CuteCareDevice(Entity):
         self.mac = mac.upper()
         self.hass.data[DOMAIN][CUTECARE_DEVICES][self.mac] = self
 
+    def parse_service_data(self, data):
+        """Parse service data."""
+
+    def parse_manufacturer_data(self, data):
+        """Parse manufacturer data."""
+
 
 class JDY08Device(CuteCareDevice):
     def __init__(self, hass, mac):
@@ -222,52 +228,30 @@ class JDY08Device(CuteCareDevice):
                 _LOGGER.error("Unable set GPIO of JDY08: %s" % e)
 
 
-class BLEPeripheralDelegate(DefaultDelegate):
-    def __init__(self, device):
-        self.device = device
-        DefaultDelegate.__init__(self)
-
-    def handleNotification(self, cHandle, data):
-        self.device.parse_data(cHandle, data)
-
-
 class CC41ADevice(CuteCareDevice):
     def __init__(self, hass, mac):
-        self._valuesList = []
+        self._major = 0
+        self._minor = 0
         CuteCareDevice.__init__(self, hass, mac)
 
     @property
-    def value(self):
-        return self._valuesList[-1] if len(self._valuesList) > 0 else 0
-
-    def update(self):
-        """ Update sensor value """
-
-        attempts = 3
-        while attempts > 0:
-            attempts -= 1
-
-            try:
-                self._valuesList = []
-                p = Peripheral(self.mac).withDelegate(BLEPeripheralDelegate(self))
-
-                notifications = 3
-                while notifications > 0:
-                    p.waitForNotifications(2)
-                    notifications -= 1
-                
-                p.disconnect()
-                return len(self._valuesList) > 1
-            
-            except BTLEException as e:
-                _LOGGER.error("Unable receive BLE notification: %s" % e)
-        
+    def should_poll(self):
         return False
 
-    def parse_data(self, cHandle, data):
-        """Parse data."""
+    @property
+    def value(self):
+        return self._major
 
-        byte_list = list(data)
-        self._valuesList.append(byte_list[0] * 256 + byte_list[1])
+    @property
+    def battery(self):
+        return self._minor
 
-        _LOGGER.info("CC41-A notification has been received: %d" % (self._valuesList[-1]))
+    def parse_manufacturer_data(self, data):
+        """Parse manufacturer data."""
+
+        segments = list(map(''.join, zip(*[iter(data)]*4)))
+        if len(segments) > 11:
+            self._major = int(segments[10], 16)
+            self._minor = int(segments[11], 16)
+
+        self.schedule_update_ha_state(True)

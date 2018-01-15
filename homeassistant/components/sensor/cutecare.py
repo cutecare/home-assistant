@@ -72,16 +72,9 @@ class CuteCareSensorProxy(CC41ADevice):
 
     def update(self):
         """ Update sendor conditions. """
-        try:
-            transformations = {
-                '%': lambda value: round((value / 1024) * 100,1),
-                '%.': lambda value: round(100 - (value / 1024) * 100,1)
-            }
 
-            _LOGGER.debug("Polling data for %s", self.name)
-            if super(CuteCareSensorProxy, self).update():
-                self._state = transformations[self._unit](self.value)
-
-        except IOError as ioerr:
-            _LOGGER.info("Polling error %s", ioerr)
-            self._state = None
+        transformations = {
+            '%': lambda value: round((value / 1024) * 100,1),
+            '%.': lambda value: round(100 - (value / 1024) * 100,1)
+        }
+        self._state = transformations[self._unit](self.value)
