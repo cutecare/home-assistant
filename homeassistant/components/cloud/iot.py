@@ -5,7 +5,8 @@ import logging
 from aiohttp import hdrs, client_exceptions, WSMsgType
 
 from homeassistant.const import EVENT_HOMEASSISTANT_STOP
-from homeassistant.components.alexa import smart_home
+from homeassistant.components.alexa import smart_home as alexa
+from homeassistant.components.google_assistant import smart_home as ga
 from homeassistant.util.decorator import Registry
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from . import auth_api
@@ -59,13 +60,6 @@ class CloudIoT:
         if self.state == STATE_CONNECTED:
             raise RuntimeError('Already connected')
 
-        self.state = STATE_CONNECTING
-        self.close_requested = False
-        remove_hass_stop_listener = None
-        session = async_get_clientsession(self.cloud.hass)
-        client = None
-        disconnect_warn = None
-
         @asyncio.coroutine
         def _handle_hass_stop(event):
             """Handle Home Assistant shutting down."""
@@ -73,18 +67,23 @@ class CloudIoT:
             remove_hass_stop_listener = None
             yield from self.disconnect()
 
+        self.state = STATE_CONNECTING
+        self.close_requested = False
+        remove_hass_stop_listener = hass.bus.async_listen_once(
+            EVENT_HOMEASSISTANT_STOP, _handle_hass_stop)
+        session = async_get_clientsession(self.cloud.hass)
+        client = None
+        disconnect_warn = None
+
         try:
             yield from hass.async_add_job(auth_api.check_token, self.cloud)
 
             self.client = client = yield from session.ws_connect(
-                self.cloud.relayer, headers={
+                self.cloud.relayer, heartbeat=55, headers={
                     hdrs.AUTHORIZATION:
                         'Bearer {}'.format(self.cloud.id_token)
                 })
             self.tries = 0
-
-            remove_hass_stop_listener = hass.bus.async_listen_once(
-                EVENT_HOMEASSISTANT_STOP, _handle_hass_stop)
 
             _LOGGER.info('Connected')
             self.state = STATE_CONNECTED
@@ -206,9 +205,18 @@ def async_handle_message(hass, cloud, handler_name, payload):
 @asyncio.coroutine
 def async_handle_alexa(hass, cloud, payload):
     """Handle an incoming IoT message for Alexa."""
-    return (yield from smart_home.async_handle_message(hass,
-                                                       cloud.alexa_config,
-                                                       payload))
+    result = yield from alexa.async_handle_message(hass, cloud.alexa_config,
+                                                   payload)
+    return result
+
+
+@HANDLERS.register('google_actions')
+@asyncio.coroutine
+def async_handle_google_actions(hass, cloud, payload):
+    """Handle an incoming IoT message for Google Actions."""
+    result = yield from ga.async_handle_message(hass, cloud.gactions_config,
+                                                payload)
+    return result
 
 
 @HANDLERS.register('cloud')
