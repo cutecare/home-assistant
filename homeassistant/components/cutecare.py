@@ -141,9 +141,9 @@ class CuteCareDevice(Entity):
         """Initialize the device."""
         self.hass = hass
         self.mac = mac.upper()
-        if self.mac not in self._hass.data[DOMAIN][CUTECARE_DEVICES]:
-            self.hass.data[DOMAIN][CUTECARE_DEVICES][self.mac] = []
-        self.hass.data[DOMAIN][CUTECARE_DEVICES][self.mac].append(self)
+        if self.mac not in hass.data[DOMAIN][CUTECARE_DEVICES]:
+            hass.data[DOMAIN][CUTECARE_DEVICES][self.mac] = []
+        hass.data[DOMAIN][CUTECARE_DEVICES][self.mac].append(self)
 
     def parse_service_data(self, data):
         """Parse service data."""
