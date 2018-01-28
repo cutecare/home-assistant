@@ -120,13 +120,18 @@ class BLEScanDelegate(DefaultDelegate):
         if address in self._hass.data[DOMAIN][CUTECARE_DEVICES]:
             entity = self._hass.data[DOMAIN][CUTECARE_DEVICES][address]
             for (adtype, description, value) in dev.getScanData():
-                _LOGGER.info('BLE message %d with text %s for %s' % (adtype, value, address))
+                # _LOGGER.info('BLE message %d with text %s for %s' % (adtype, value, address))
                 if adtype == 255:
                     _LOGGER.info('BLE device manufacturer has been found %s' % (value))
                     entity.parse_manufacturer_data(value)
                 if adtype == 22:
                     _LOGGER.info('BLE device service message has been found %s' % (value))
                     entity.parse_service_data(value)
+                if adtype == 9:
+                    _LOGGER.debug('BLE device local name been found %s' % (value))
+                if adtype == 2:
+                    _LOGGER.info('BLE device service class UUIDs been found %s' % (value))
+                    entity.parse_service_class_data(value)
 
 
 class CuteCareDevice(Entity):
@@ -144,6 +149,8 @@ class CuteCareDevice(Entity):
     def parse_manufacturer_data(self, data):
         """Parse manufacturer data."""
 
+    def parse_service_class_data(self, data):
+        """Parse service class data."""
 
 class JDY08Device(CuteCareDevice):
     def __init__(self, hass, mac):
@@ -276,10 +283,10 @@ class JDY10Device(CuteCareDevice):
     def valueLow(self):
         return self._minor
 
-    def parse_manufacturer_data(self, data):
+    def parse_service_class_data(self, data):
         segments = list(map(''.join, zip(*[iter(data)]*2)))
-        if len(segments) > 21:
-            value = int(segments[21], 16) << 8 + int(segments[20], 16)
+        if len(segments) > 1:
+            value = int(segments[1], 16) << 8 + int(segments[0], 16)
             self._major = value >> 6
             self._minor = value & 0x003F
 
