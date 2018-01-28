@@ -34,7 +34,7 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
 
 def setup_platform(hass, config, add_devices, discovery_info=None):
 
-    def deviceByType(self, type, name, unit):
+    def deviceByType(type, name, unit):
         return {
             'cc41a': CuteCareSensorProxy(hass, config.get(CONF_MAC), name, unit),
             'jdy10': CuteCareJDY10SensorProxy(hass, config.get(CONF_MAC), name, unit)
