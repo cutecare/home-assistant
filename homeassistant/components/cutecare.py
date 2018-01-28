@@ -120,7 +120,7 @@ class BLEScanDelegate(DefaultDelegate):
         if address in self._hass.data[DOMAIN][CUTECARE_DEVICES]:
             entity = self._hass.data[DOMAIN][CUTECARE_DEVICES][address]
             for (adtype, description, value) in dev.getScanData():
-                _LOGGER.info('BLE message %s for %s' % (value, address))
+                _LOGGER.info('BLE message %d with text %s for %s' % (adtype, value, address))
                 if adtype == 255:
                     _LOGGER.info('BLE device manufacturer has been found %s' % (value))
                     entity.parse_manufacturer_data(value)
