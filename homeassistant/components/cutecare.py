@@ -286,7 +286,7 @@ class JDY10Device(CuteCareDevice):
     def parse_service_class_data(self, data):
         segments = list(map(''.join, zip(*[iter(data)]*2)))
         if len(segments) > 1:
-            value = int(segments[1], 16) << 8 + int(segments[0], 16)
+            value = (int(segments[1], 16) << 8) + int(segments[0], 16)
             self._major = value >> 6
             self._minor = value & 0x003F
 
