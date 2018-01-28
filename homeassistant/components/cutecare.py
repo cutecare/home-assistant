@@ -255,3 +255,31 @@ class CC41ADevice(CuteCareDevice):
             self._minor = int(segments[11], 16)
 
         self.schedule_update_ha_state(True)
+
+
+class JDY10Device(CuteCareDevice):
+    def __init__(self, hass, mac):
+        self._major = 0
+        self._minor = 0
+        CuteCareDevice.__init__(self, hass, mac)
+
+    @property
+    def should_poll(self):
+        return False
+
+    @property
+    def valueHigh(self):
+        return self._major
+
+    @property
+    def valueLow(self):
+        return self._minor
+
+    def parse_manufacturer_data(self, data):
+        segments = list(map(''.join, zip(*[iter(data)]*2)))
+        if len(segments) > 21:
+            value = int(segments[21], 16) << 8 + int(segments[20], 16)
+            self._major = value >> 6
+            self._minor = value & 0x003F
+
+        self.schedule_update_ha_state(True)
