@@ -22,7 +22,8 @@ SENSOR_TYPES = {
     'dryness': ['Dryness', '%'],
     'moisture': ['Moisture', '%.'],
     'temperature': ['Temperature', 'C'],
-    'pressure': ['Pressure', 'mm/hg']
+    'pressure': ['Pressure', 'mm/hg'],
+    'co2': ['CO2', 'ppm']
 }
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
@@ -120,6 +121,7 @@ class CuteCareJDY10SensorProxy(JDY10Device):
 
         transformations = {
             'C': self.valueLow,
-            'mm/hg': self.valueHigh
+            'mm/hg': self.valueHigh,
+            'ppm': self.valueHigh * 10
         }
         self._state = transformations[self._unit]        
