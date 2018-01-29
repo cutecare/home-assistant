@@ -8,6 +8,7 @@ import asyncio
 from collections import defaultdict
 from datetime import timedelta, datetime
 import logging 
+from time import sleep
 
 from homeassistant.const import (EVENT_HOMEASSISTANT_STOP)
 from homeassistant.exceptions import HomeAssistantError
@@ -217,6 +218,7 @@ class JDY08Device(CuteCareDevice):
                 while writeAttempts > 0:
                     writeAttempts -= 1
                     device.writeCharacteristic( 7, onBytes if state else offBytes, False)
+                    sleep(0.5)
 
                 device.disconnect()
                 _LOGGER.info("GPIO of JDY08 has been set")
