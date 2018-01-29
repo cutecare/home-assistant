@@ -218,7 +218,7 @@ class JDY08Device(CuteCareDevice):
                 while writeAttempts > 0:
                     writeAttempts -= 1
                     device.writeCharacteristic( 7, onBytes if state else offBytes, False)
-                    sleep(0.5)
+                    sleep(0.2)
 
                 device.disconnect()
                 _LOGGER.info("GPIO of JDY08 has been set")
