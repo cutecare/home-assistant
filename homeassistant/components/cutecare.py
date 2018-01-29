@@ -31,8 +31,7 @@ def async_setup(hass, config):
     # when processing events
     hass.data[DOMAIN] = {
         CUTECARE_DEVICES: defaultdict(list),
-        CUTECARE_STATE: True,
-        CUTECARE_SCAN_TIMES: 0
+        CUTECARE_STATE: True
     }
 
     @asyncio.coroutine
@@ -41,23 +40,12 @@ def async_setup(hass, config):
 
         if hass.data[DOMAIN][CUTECARE_STATE]:
             try:
-                if hass.data[DOMAIN][CUTECARE_SCAN_TIMES] < 3:
-                    hass.data[DOMAIN][CUTECARE_SCAN_TIMES] += 1
-                else:
-                    hass.data[DOMAIN][CUTECARE_SCAN_TIMES] = 0
-                    scanner.clear()
-                    scanner.stop()
-                    scanner.start()
-
-                scanner.process(1.0)
+                scanner = Scanner(CUTECARE_DEVICE).withDelegate(BLEScanDelegate(hass))
+                scanner.scan(1.0)
 
             except BTLEException as e:
                 _LOGGER.error(e)
-                try:
-                    scanner.start()
-                except BTLEException as e:
-                    _LOGGER.error(e)
-                    restart_bluetooth()
+                restart_bluetooth()
 
         else:
             _LOGGER.info('Scanning has been completed')
@@ -65,7 +53,6 @@ def async_setup(hass, config):
     def stop_scanning(event):
         _LOGGER.info('Stop scanning BLE devices')
         hass.data[DOMAIN][CUTECARE_STATE] = False
-        scanner.stop()
 
     def restart_bluetooth():
         import os
@@ -99,6 +86,7 @@ def async_setup(hass, config):
         try:
             scanner = Scanner(CUTECARE_DEVICE).withDelegate(BLEScanDelegate(hass))
             scanner.start()
+            scanner.stop()
             break
 
         except BTLEException as e:
@@ -106,7 +94,7 @@ def async_setup(hass, config):
             restart_bluetooth()
 
     # look for advertising messages periodically
-    async_track_time_interval(hass, scan_ble_devices, timedelta(milliseconds=1500))
+    async_track_time_interval(hass, scan_ble_devices, timedelta(milliseconds=2000))
 
     return True
 
