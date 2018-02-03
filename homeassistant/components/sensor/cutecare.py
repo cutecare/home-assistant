@@ -7,7 +7,7 @@ https://home-assistant.io/components/sensor.cutecare/
 import logging
 import voluptuous as vol
 
-from homeassistant.components.cutecare import CC41ADevice, JDY10Device
+from homeassistant.components.cutecare import CC41ADevice, JDY10Device, JDY08Device
 from homeassistant.components.sensor import PLATFORM_SCHEMA
 from homeassistant.helpers.entity import Entity
 import homeassistant.helpers.config_validation as cv
@@ -45,6 +45,8 @@ def setup_platform(hass, config, add_devices, discovery_info=None):
         
         if config.get(CONF_TYPE) == 'jdy10':
             devs.append(CuteCareJDY10SensorProxy(hass, config.get(CONF_MAC), name, unit))
+        elif config.get(CONF_TYPE) == 'jdy8':
+            devs.append(CuteCareJDY8SensorProxy(hass, config.get(CONF_MAC), name, unit))
         else:
             devs.append(CuteCareSensorProxy(hass, config.get(CONF_MAC), name, unit))
 
@@ -125,3 +127,42 @@ class CuteCareJDY10SensorProxy(JDY10Device):
             'ppm': self.valueHigh * 10
         }
         self._state = transformations[self._unit]        
+
+
+class CuteCareJDY8SensorProxy(JDY08Device):
+    def __init__(self, hass, mac, name, unit):
+        self._unit = unit
+        self._name = name
+        self._force_update = False
+        self._state = None
+        JDY08Device.__init__(self, hass, mac)
+
+    @property
+    def name(self):
+        """Return the name of the sensor."""
+        return self._name
+
+    @property
+    def state(self):
+        """Return the state of the sensor."""
+        return self._state
+
+    @property
+    def unit_of_measurement(self):
+        """Return the units of measurement."""
+        return self._unit
+
+    @property
+    def force_update(self):
+        """Force update."""
+        return self._force_update
+
+    def update(self):
+        """ Update sendor conditions. """
+
+        transformations = {
+            '%': self.humidity,
+            '%.': 100 - self.humidity,
+            'C': self.temperature
+        }
+        self._state = transformations[self._unit]                
