@@ -111,15 +111,15 @@ class BLEScanDelegate(DefaultDelegate):
                 for (adtype, description, value) in dev.getScanData():
                     # _LOGGER.info('BLE message %d with text %s for %s' % (adtype, value, address))
                     if adtype == 255:
-                        _LOGGER.info('BLE device manufacturer has been found %s' % (value))
+                        _LOGGER.debug('BLE device manufacturer has been found %s' % (value))
                         entity.parse_manufacturer_data(value)
                     if adtype == 22:
-                        _LOGGER.info('BLE device service message has been found %s' % (value))
+                        _LOGGER.debug('BLE device service message has been found %s' % (value))
                         entity.parse_service_data(value)
                     if adtype == 9:
                         _LOGGER.debug('BLE device local name been found %s' % (value))
                     if adtype == 2:
-                        _LOGGER.info('BLE device service class UUIDs been found %s' % (value))
+                        _LOGGER.debug('BLE device service class UUIDs been found %s' % (value))
                         entity.parse_service_class_data(value)
 
 

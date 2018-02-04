@@ -161,8 +161,8 @@ class CuteCareJDY8SensorProxy(JDY08Device):
         """ Update sendor conditions. """
 
         transformations = {
-            '%': 100 - self.humidity,
-            '%.': self.humidity,
+            '%': self.humidity,
+            '%.': 100 - self.humidity,
             'C': self.temperature
         }
         self._state = transformations[self._unit]                
