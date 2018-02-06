@@ -48,9 +48,6 @@ def async_setup(hass, config):
                 _LOGGER.error(e)
                 restart_bluetooth()
 
-        else:
-            _LOGGER.info('Scanning has been completed')
-
     def stop_scanning(event):
         _LOGGER.info('Stop scanning BLE devices')
         hass.data[DOMAIN][CUTECARE_STATE] = False
@@ -207,6 +204,8 @@ class JDY08Device(CuteCareDevice):
         onBytes = bytes([231, 240 + pin, 1])
         offBytes = bytes([231, 240 + pin, 0])
 
+        self.hass.data[DOMAIN][CUTECARE_STATE] = False
+
         retries = 6
         while retries > 0:
             retries -= 1
@@ -222,6 +221,8 @@ class JDY08Device(CuteCareDevice):
             except BTLEException as e:
                 _LOGGER.error("Unable set GPIO of JDY08: %s" % e)
                 sleep(0.5)
+
+        self.hass.data[DOMAIN][CUTECARE_STATE] = True
 
 
 class CC41ADevice(CuteCareDevice):
