@@ -6,6 +6,7 @@ https://home-assistant.io/components/cutecare/
 """
 import asyncio
 from collections import defaultdict
+from threading import Lock
 from datetime import timedelta, datetime
 import logging 
 from time import sleep
@@ -23,6 +24,7 @@ CUTECARE_DEVICES = 'devices'
 CUTECARE_STATE = 'state'
 CUTECARE_SCAN_TIMES = 'scan-times'
 CUTECARE_DEVICE = 0
+CUTECARE_LOCK = 'hci-lock'
 
 @asyncio.coroutine
 def async_setup(hass, config):
@@ -32,13 +34,15 @@ def async_setup(hass, config):
     # when processing events
     hass.data[DOMAIN] = {
         CUTECARE_DEVICES: defaultdict(list),
-        CUTECARE_STATE: True
+        CUTECARE_STATE: True,
+        CUTECARE_LOCK: Lock()
     }
 
     @asyncio.coroutine
     def scan_ble_devices(now):
         """Main loop where BLE devices are scanned."""
 
+        hass.data[DOMAIN][CUTECARE_LOCK].acquire()
         if hass.data[DOMAIN][CUTECARE_STATE]:
             try:
                 scanner = Scanner(CUTECARE_DEVICE).withDelegate(BLEScanDelegate(hass))
@@ -47,6 +51,10 @@ def async_setup(hass, config):
             except BTLEException as e:
                 _LOGGER.error(e)
                 restart_bluetooth()
+
+            finally:
+                hass.data[DOMAIN][CUTECARE_LOCK].release()
+
 
     def stop_scanning(event):
         _LOGGER.info('Stop scanning BLE devices')
@@ -204,25 +212,27 @@ class JDY08Device(CuteCareDevice):
         onBytes = bytes([231, 240 + pin, 1])
         offBytes = bytes([231, 240 + pin, 0])
 
+        self.hass.data[DOMAIN][CUTECARE_LOCK].acquire()
         self.hass.data[DOMAIN][CUTECARE_STATE] = False
+        try:
+            retries = 6
+            while retries > 0:
+                retries -= 1
 
-        retries = 6
-        while retries > 0:
-            retries -= 1
+                try:
+                    device = Peripheral(self.mac)
+                    device.writeCharacteristic( 7, onBytes if state else offBytes, False)
+                    device.writeCharacteristic( 7, onBytes if state else offBytes, False)
+                    device.disconnect()
+                    _LOGGER.info("GPIO of JDY08 has been set")
+                    break
 
-            try:
-                device = Peripheral(self.mac)
-                device.writeCharacteristic( 7, onBytes if state else offBytes, False)
-                device.writeCharacteristic( 7, onBytes if state else offBytes, False)
-                device.disconnect()
-                _LOGGER.info("GPIO of JDY08 has been set")
-                break
-
-            except BTLEException as e:
-                _LOGGER.error("Unable set GPIO of JDY08: %s" % e)
-                sleep(0.5)
-
-        self.hass.data[DOMAIN][CUTECARE_STATE] = True
+                except BTLEException as e:
+                    _LOGGER.error("Unable set GPIO of JDY08: %s" % e)
+                    sleep(0.5)
+        finally:
+            self.hass.data[DOMAIN][CUTECARE_STATE] = True
+            self.hass.data[DOMAIN][CUTECARE_LOCK].release()
 
 
 class CC41ADevice(CuteCareDevice):
