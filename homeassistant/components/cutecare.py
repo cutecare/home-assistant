@@ -100,7 +100,7 @@ def async_setup(hass, config):
             restart_bluetooth()
 
     # look for advertising messages periodically
-    async_track_time_interval(hass, scan_ble_devices, timedelta(milliseconds=2000))
+    async_track_time_interval(hass, scan_ble_devices, timedelta(milliseconds=1100))
 
     return True
 
