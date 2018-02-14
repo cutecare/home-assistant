@@ -15,7 +15,7 @@ _LOGGER = logging.getLogger(__name__)
 DEPENDENCIES = ['cutecare']
 CONF_THRESHOLD = 'threshold'
 
-PLATFORM_SCHEMA = vol.Schema({
+PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     vol.Required(CONF_MAC): cv.string,
     vol.Optional(CONF_NAME): cv.string,
     vol.Optional(CONF_THRESHOLD, default=1): cv.positive_int
@@ -44,7 +44,7 @@ class CuteCareSwitchProxy(JDY08Device, SwitchDevice):
     @property
     def is_on(self):
         _LOGGER.info('Switch value changed to %d, threshold is %d' % (self.major, self._threshold))
-        return self.major > self._threshold
+        return False if self.state_obsolete() else self.major > self._threshold
 
     def turn_on(self, **kwargs):
         self._major = 1

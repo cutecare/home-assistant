@@ -15,6 +15,7 @@ from homeassistant.const import (EVENT_HOMEASSISTANT_STOP)
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.entity import Entity
 from homeassistant.helpers.event import async_track_time_interval
+from homeassistant.util.dt import now as dt_now
 from bluepy.btle import Scanner, Peripheral, DefaultDelegate, BTLEException
 
 _LOGGER = logging.getLogger(__name__)
@@ -113,6 +114,7 @@ class BLEScanDelegate(DefaultDelegate):
         address = dev.addr.upper()
         if address in self._hass.data[DOMAIN][CUTECARE_DEVICES]:
             for entity in self._hass.data[DOMAIN][CUTECARE_DEVICES][address]:
+                entity.reset_state_time()
                 for (adtype, description, value) in dev.getScanData():
                     # _LOGGER.info('BLE message %d with text %s for %s' % (adtype, value, address))
                     if adtype == 255:
@@ -135,9 +137,18 @@ class CuteCareDevice(Entity):
         """Initialize the device."""
         self.hass = hass
         self.mac = mac.upper()
+        self.reset_state_time()
+
         if self.mac not in hass.data[DOMAIN][CUTECARE_DEVICES]:
             hass.data[DOMAIN][CUTECARE_DEVICES][self.mac] = []
         hass.data[DOMAIN][CUTECARE_DEVICES][self.mac].append(self)
+
+    def reset_state_time(self):
+        self.update_dt = dt_now()
+
+    @property
+    def state_obsolete(self):
+        return int(dt_now().timestamp() - self.update_dt.timestamp()) > 600
 
     def parse_service_data(self, data):
         """Parse service data."""
