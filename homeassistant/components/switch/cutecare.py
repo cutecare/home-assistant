@@ -8,6 +8,7 @@ from homeassistant.components.cutecare import JDY08Device
 from homeassistant.components.switch import SwitchDevice
 from homeassistant.const import (CONF_NAME, CONF_MAC, STATE_OFF, STATE_ON)
 
+_LOGGER = logging.getLogger(__name__)
 DEPENDENCIES = ['cutecare']
 CONF_THRESHOLD = 'threshold'
 
