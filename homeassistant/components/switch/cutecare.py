@@ -44,21 +44,15 @@ class CuteCareSwitchProxy(JDY08Device, SwitchDevice):
 
     @property
     def is_on(self):
-        _LOGGER.info('Switch value changed to %d, threshold is %d' % (self.major, self._threshold))
+        _LOGGER.debug('Switch value is %d, threshold is %d' % (self.major, self._threshold))
         return False if self.state_obsolete else (self.major > self._threshold)
 
     def turn_on(self, **kwargs):
-        self._major = 1
         self.set_gpio(2, True)
         self.set_gpio(1, True)
-        self.set_gpio(2, True)
-        self.set_gpio(1, True)
-        self._major = 1
+        self._major = self._threshold + 1
 
     def turn_off(self, **kwargs):
-        self._major = 0
-        self.set_gpio(2, False)
-        self.set_gpio(1, False)
         self.set_gpio(2, False)
         self.set_gpio(1, False)
         self._major = 0

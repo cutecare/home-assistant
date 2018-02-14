@@ -45,20 +45,20 @@ def async_setup(hass, config):
 
         def scan_thread_func(hass):
             hass.data[DOMAIN][CUTECARE_LOCK].acquire()
-            if hass.data[DOMAIN][CUTECARE_STATE]:
-                try:
-                    scanner = Scanner(CUTECARE_DEVICE).withDelegate(BLEScanDelegate(hass))
-                    scanner.scan(3.0)
+            try:
+                scanner = Scanner(CUTECARE_DEVICE).withDelegate(BLEScanDelegate(hass))
+                scanner.scan(3.0)
 
-                except BTLEException as e:
-                    _LOGGER.error(e)
-                    restart_bluetooth()
+            except BTLEException as e:
+                _LOGGER.error(e)
+                restart_bluetooth()
 
-                finally:
-                    hass.data[DOMAIN][CUTECARE_LOCK].release()
+            finally:
+                hass.data[DOMAIN][CUTECARE_LOCK].release()
 
-        t = Thread(target=scan_thread_func, args=(hass,))
-        t.start()
+        if hass.data[DOMAIN][CUTECARE_STATE]:
+            t = Thread(target=scan_thread_func, args=(hass,))
+            t.start()
 
     def stop_scanning(event):
         _LOGGER.info('Stop scanning BLE devices')
