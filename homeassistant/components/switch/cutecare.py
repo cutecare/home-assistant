@@ -9,16 +9,18 @@ from homeassistant.components.switch import SwitchDevice
 from homeassistant.const import (CONF_NAME, CONF_MAC, STATE_OFF, STATE_ON)
 
 DEPENDENCIES = ['cutecare']
+CONF_THRESHOLD = 'threshold'
 
 def setup_platform(hass, config, add_devices, discovery_info=None):
     """ Setup devices as switches """
 
-    add_devices([CuteCareSwitchProxy(hass, config.get(CONF_MAC), config.get(CONF_NAME))])
+    add_devices([CuteCareSwitchProxy(hass, config.get(CONF_MAC), config.get(CONF_NAME), config.get(CONF_THRESHOLD))])
 
 
 class CuteCareSwitchProxy(JDY08Device, SwitchDevice):
-    def __init__(self, hass, mac, name):
+    def __init__(self, hass, mac, name, threshold):
         self._name = name
+        self._threshold = threshold
         JDY08Device.__init__(self, hass, mac)
 
     @property
@@ -31,7 +33,8 @@ class CuteCareSwitchProxy(JDY08Device, SwitchDevice):
 
     @property
     def is_on(self):
-        return self.major > 0
+        _LOGGER.info('Switch value changed to %d, threshold is %d' % (self.major, self._threshold))
+        return self.major > self._threshold
 
     def turn_on(self, **kwargs):
         self._major = 1
