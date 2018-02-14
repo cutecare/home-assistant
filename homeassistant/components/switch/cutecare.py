@@ -45,7 +45,7 @@ class CuteCareSwitchProxy(JDY08Device, SwitchDevice):
     @property
     def is_on(self):
         _LOGGER.info('Switch value changed to %d, threshold is %d' % (self.major, self._threshold))
-        return False if self.state_obsolete() else self.major > self._threshold
+        return False if self.state_obsolete else (self.major > self._threshold)
 
     def turn_on(self, **kwargs):
         self._major = 1
