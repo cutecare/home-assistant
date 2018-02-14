@@ -34,9 +34,15 @@ class CuteCareSwitchProxy(JDY08Device, SwitchDevice):
         return self.major > 0
 
     def turn_on(self, **kwargs):
+        self.major = 1
+        self.set_gpio(1, True)
+        self.set_gpio(2, True)
         self.set_gpio(1, True)
         self.set_gpio(2, True)
 
     def turn_off(self, **kwargs):
+        self.major = 0
+        self.set_gpio(1, False)
+        self.set_gpio(2, False)
         self.set_gpio(1, False)
         self.set_gpio(2, False)
