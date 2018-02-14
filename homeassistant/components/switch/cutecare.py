@@ -9,6 +9,7 @@ import voluptuous as vol
 import homeassistant.helpers.config_validation as cv
 from homeassistant.components.cutecare import JDY08Device
 from homeassistant.components.switch import SwitchDevice
+from homeassistant.helpers.config_validation import PLATFORM_SCHEMA
 from homeassistant.const import (CONF_NAME, CONF_MAC, STATE_OFF, STATE_ON)
 
 _LOGGER = logging.getLogger(__name__)
