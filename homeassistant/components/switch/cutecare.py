@@ -15,24 +15,25 @@ from homeassistant.const import (CONF_NAME, CONF_MAC, STATE_OFF, STATE_ON)
 _LOGGER = logging.getLogger(__name__)
 DEPENDENCIES = ['cutecare']
 CONF_THRESHOLD = 'threshold'
+CONF_PIN_NUMBER = 'pin'
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     vol.Required(CONF_MAC): cv.string,
     vol.Optional(CONF_NAME): cv.string,
-    vol.Optional(CONF_THRESHOLD, default=1): cv.positive_int
+    vol.Optional(CONF_THRESHOLD, default=1): cv.positive_int,
+    vol.Optional(CONF_PIN_NUMBER, default=1): cv.positive_int
 })
 
 def setup_platform(hass, config, add_devices, discovery_info=None):
-    """ Setup devices as switches """
-
-    add_devices([CuteCareSwitchProxy(hass, config.get(CONF_MAC), config.get(CONF_NAME), config.get(CONF_THRESHOLD))])
+    add_devices([CuteCareSwitchProxy(hass, config)])
 
 
 class CuteCareSwitchProxy(JDY08Device, SwitchDevice):
-    def __init__(self, hass, mac, name, threshold):
-        self._name = name
-        self._threshold = threshold
-        JDY08Device.__init__(self, hass, mac)
+    def __init__(self, hass, config):
+        self._name = config.get(CONF_NAME)
+        self._threshold = config.get(CONF_THRESHOLD)
+        self._pin = config.get(CONF_PIN_NUMBER)
+        JDY08Device.__init__(self, hass, config.get(CONF_MAC))
 
     @property
     def assumed_state(self):
@@ -48,11 +49,9 @@ class CuteCareSwitchProxy(JDY08Device, SwitchDevice):
         return False if self.state_obsolete else (self.major > self._threshold)
 
     def turn_on(self, **kwargs):
-        self.set_gpio(2, True)
-        self.set_gpio(1, True)
+        self.set_gpio(self._pin, True)
         self._major = self._threshold + 1
 
     def turn_off(self, **kwargs):
-        self.set_gpio(2, False)
-        self.set_gpio(1, False)
+        self.set_gpio(self._pin, False)
         self._major = 0
