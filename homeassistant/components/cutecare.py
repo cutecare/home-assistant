@@ -6,7 +6,7 @@ https://home-assistant.io/components/cutecare/
 """
 import asyncio
 from collections import defaultdict
-from threading import Lock
+from threading import Lock, Thread
 from datetime import timedelta, datetime
 import logging 
 from time import sleep
@@ -43,19 +43,22 @@ def async_setup(hass, config):
     def scan_ble_devices(now):
         """Main loop where BLE devices are scanned."""
 
-        hass.data[DOMAIN][CUTECARE_LOCK].acquire()
-        if hass.data[DOMAIN][CUTECARE_STATE]:
-            try:
-                scanner = Scanner(CUTECARE_DEVICE).withDelegate(BLEScanDelegate(hass))
-                scanner.scan(1.0)
+        def scan_thread_func(hass):
+            hass.data[DOMAIN][CUTECARE_LOCK].acquire()
+            if hass.data[DOMAIN][CUTECARE_STATE]:
+                try:
+                    scanner = Scanner(CUTECARE_DEVICE).withDelegate(BLEScanDelegate(hass))
+                    scanner.scan(3.0)
 
-            except BTLEException as e:
-                _LOGGER.error(e)
-                restart_bluetooth()
+                except BTLEException as e:
+                    _LOGGER.error(e)
+                    restart_bluetooth()
 
-            finally:
-                hass.data[DOMAIN][CUTECARE_LOCK].release()
+                finally:
+                    hass.data[DOMAIN][CUTECARE_LOCK].release()
 
+        t = Thread(target=scan_thread_func, args=(hass,))
+        t.start()
 
     def stop_scanning(event):
         _LOGGER.info('Stop scanning BLE devices')
@@ -101,7 +104,7 @@ def async_setup(hass, config):
             restart_bluetooth()
 
     # look for advertising messages periodically
-    async_track_time_interval(hass, scan_ble_devices, timedelta(milliseconds=1100))
+    async_track_time_interval(hass, scan_ble_devices, timedelta(milliseconds=3200))
 
     return True
 
