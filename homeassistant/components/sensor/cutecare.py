@@ -28,7 +28,7 @@ SENSOR_TYPES = {
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     vol.Required(CONF_MAC): cv.string,
-    vol.Required(CONF_TYPE, default="cc41a"): cv.string,
+    vol.Required(CONF_TYPE, default="jdy8"): cv.string,
     vol.Optional(CONF_MONITORED_CONDITIONS, default=SENSOR_TYPES): vol.All(cv.ensure_list, [vol.In(SENSOR_TYPES)]),
     vol.Optional(CONF_NAME, default=DEFAULT_NAME): cv.string
 })
@@ -163,6 +163,8 @@ class CuteCareJDY8SensorProxy(JDY08Device):
         transformations = {
             '%': 100 - self.humidity,
             '%.': self.humidity,
-            'C': self.temperature
+            'C': self.temperature,
+            'ppm': self.humidity,
+            'mm/hg': self.minor
         }
         self._state = transformations[self._unit]                
