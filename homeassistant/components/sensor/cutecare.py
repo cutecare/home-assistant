@@ -164,7 +164,7 @@ class CuteCareJDY8SensorProxy(JDY08Device):
             '%': 100 - self.humidity,
             '%.': self.humidity,
             'C': self.temperature,
-            'ppm': self.humidity,
+            'ppm': self.major,
             'mm/hg': self.minor
         }
         self._state = transformations[self._unit]                
