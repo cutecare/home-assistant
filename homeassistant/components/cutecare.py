@@ -127,7 +127,7 @@ class BLEScanDelegate(DefaultDelegate):
                         _LOGGER.debug('BLE device service message has been found %s' % (value))
                         entity.parse_service_data(value)
                     if adtype == 9:
-                        hass.bus.async_fire(EVENT_STATE_CHANGED, {
+                        self._hass.bus.async_fire(EVENT_STATE_CHANGED, {
                             "mac": address,
                             "name": entity.name,
                             "friendly_name": value
