@@ -163,7 +163,7 @@ class CuteCareDevice(Entity):
     def state_obsolete(self):
         return int(dt_now().timestamp() - self.update_dt.timestamp()) > 600
 
-    def set_friendly_name(self, name)
+    def set_friendly_name(self, name):
         self.friendly_name = name 
 
     def parse_service_data(self, data):
