@@ -115,6 +115,15 @@ class BLEScanDelegate(DefaultDelegate):
 
     def handleDiscovery(self, dev, isNewDev, isNewData):
         address = dev.addr.upper()
+        deviceInfo = {
+            "mac": address,
+            "name": "",
+            "friendly_name": ""
+        }
+        for (adtype, description, value) in dev.getScanData():
+            if adtype == 9:
+                deviceInfo["friendly_name"] = value
+
         if address in self._hass.data[DOMAIN][CUTECARE_DEVICES]:
             for entity in self._hass.data[DOMAIN][CUTECARE_DEVICES][address]:
                 entity.reset_state_time()
@@ -127,15 +136,13 @@ class BLEScanDelegate(DefaultDelegate):
                         _LOGGER.debug('BLE device service message has been found %s' % (value))
                         entity.parse_service_data(value)
                     if adtype == 9:
-                        self._hass.bus.async_fire(EVENT_STATE_CHANGED, {
-                            "mac": address,
-                            "name": entity.name,
-                            "friendly_name": value
-                        })
-                        _LOGGER.debug('BLE device local name been found %s' % (value))
+                        deviceInfo["name"] = entity.name
                     if adtype == 2:
                         _LOGGER.debug('BLE device service class UUIDs been found %s' % (value))
                         entity.parse_service_class_data(value)
+
+        if deviceInfo["friendly_name"] != "":
+            self._hass.bus.async_fire(EVENT_STATE_CHANGED, deviceInfo)
 
 
 class CuteCareDevice(Entity):
