@@ -128,6 +128,11 @@ class BLEScanDelegate(DefaultDelegate):
                         entity.parse_service_data(value)
                     if adtype == 9:
                         entity.set_friendly_name(value)
+                        hass.bus.async_fire("ble_found", {
+                            "mac": address,
+                            "name": entity.name,
+                            "friendly_name": value
+                        })
                         _LOGGER.debug('BLE device local name been found %s' % (value))
                     if adtype == 2:
                         _LOGGER.debug('BLE device service class UUIDs been found %s' % (value))
