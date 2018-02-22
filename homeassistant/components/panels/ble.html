@@ -1,0 +1,115 @@
+<dom-module id='ha-panel-ble'>
+    <template>
+        <style include="ha-style">
+            :host {
+                -ms-user-select: initial;
+                -webkit-user-select: initial;
+                -moz-user-select: initial;
+            }
+            .content {
+                padding: 16px;
+            }
+            ha-entity-picker, .state-input, paper-textarea {
+                display: block;
+                max-width: 400px;
+            }
+            .entities th {
+                text-align: left;
+            }
+            .entities tr {
+                vertical-align: top;
+            }
+            .entities tr:nth-child(odd) {
+                background-color: var(--table-row-background-color, #fff)
+            }
+            .entities tr:nth-child(even) {
+                background-color: var(--table-row-alternative-background-color, #eee)
+            }
+            .entities td:nth-child(3) {
+                white-space: pre-wrap;
+                word-break: break-word;
+            }
+            .entities a {
+                color: var(--primary-color);
+            }
+        </style>
+        
+        <app-header-layout has-scrolling-region>
+            <app-header slot="header" fixed>
+              <app-toolbar>
+                <ha-menu-button narrow='[[narrow]]' show-menu='[[showMenu]]'></ha-menu-button>
+                <div main-title>BLEs</div>
+              </app-toolbar>
+            </app-header>
+      
+            <div class='content'>
+              <table class='entities'>
+                <tr>
+                  <th>Address</th>
+                  <th>BLE Name</th>
+                  <th>Entity Name</th>
+                </tr>
+                <tr hidden$='[[!computeShowEntitiesPlaceholder(_entities)]]'>
+                  <td colspan="3">No entities</td>
+                </tr>
+                <template is='dom-repeat' items='[[_entities]]' as='entity'>
+                  <tr>
+                        <td>[[entity.mac]]</td>
+                        <td>[[entity.friendly_name]]</td>
+                        <td>[[entity.name]]</td>
+                  </tr>
+                </template>
+              </table>
+            </div>
+        </app-header-layout>
+    </template>
+  </dom-module>
+  
+  <script>
+  Polymer({
+    is: 'ha-panel-ble',
+    properties: {
+      // Home Assistant object
+      hass: {
+        type: Object,
+      },
+      // If should render in narrow mode
+      narrow: {
+        type: Boolean,
+        value: false,
+      },
+      // If sidebar is currently shown
+      showMenu: {
+        type: Boolean,
+        value: false,
+      },
+      // Home Assistant panel info
+      // panel.config contains config passed to register_panel serverside
+      panel: {
+        type: Object,
+      },
+      _entities: {
+        type: Array,
+        computed: 'computeEntities(hass)',
+      }
+    },
+    computeEntities(hass) {
+        return Object.keys(hass.data['cutecare']['devices'])
+            .map(function (key) { 
+                return hass.data['cutecare']['devices'][key];
+            })
+            .sort(function (entityA, entityB) {
+                if (entityA.friendly_name < entityB.friendly_name) {
+                    return -1;
+                }
+                if (entityA.friendly_name > entityB.friendly_name) {
+                    return 1;
+                }
+                return 0;
+            });
+    },
+    computeShowEntitiesPlaceholder(_entities) {
+        return _entities.length === 0;
+    },
+  });
+  </script>
