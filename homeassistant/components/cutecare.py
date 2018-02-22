@@ -11,7 +11,7 @@ from datetime import timedelta, datetime
 import logging 
 from time import sleep
 
-from homeassistant.const import (EVENT_HOMEASSISTANT_STOP)
+from homeassistant.const import (EVENT_HOMEASSISTANT_STOP, EVENT_STATE_CHANGED)
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.entity import Entity
 from homeassistant.helpers.event import async_track_time_interval
