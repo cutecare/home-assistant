@@ -127,7 +127,6 @@ class BLEScanDelegate(DefaultDelegate):
                         _LOGGER.debug('BLE device service message has been found %s' % (value))
                         entity.parse_service_data(value)
                     if adtype == 9:
-                        entity.set_friendly_name(value)
                         hass.bus.async_fire("ble_found", {
                             "mac": address,
                             "name": entity.name,
@@ -147,7 +146,6 @@ class CuteCareDevice(Entity):
         self.hass = hass
         self.mac = mac.upper()
         self.reset_state_time()
-        self.friendly_name = self.mac
 
         if self.mac not in hass.data[DOMAIN][CUTECARE_DEVICES]:
             hass.data[DOMAIN][CUTECARE_DEVICES][self.mac] = []
@@ -155,14 +153,6 @@ class CuteCareDevice(Entity):
 
     def reset_state_time(self):
         self.update_dt = dt_now()
-
-    @property
-    def mac(self):
-        return self.mac
-
-    @property
-    def friendly_name(self):
-        return self.friendly_name
 
     @property
     def state_obsolete(self):
