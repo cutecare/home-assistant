@@ -117,7 +117,7 @@ class BLEScanDelegate(DefaultDelegate):
         address = dev.addr.upper()
         deviceInfo = {
             "mac": address,
-            "entity_id": "cutecare.ble_scanner",
+            "entity_id": "group.ble",
             "name": "",
             "friendly_name": ""
         }
