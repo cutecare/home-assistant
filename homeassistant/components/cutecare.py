@@ -47,7 +47,7 @@ def async_setup(hass, config):
             hass.data[DOMAIN][CUTECARE_LOCK].acquire()
             try:
                 scanner = Scanner(CUTECARE_DEVICE).withDelegate(BLEScanDelegate(hass))
-                scanner.scan(2.0)
+                scanner.scan(1.2)
 
             except BTLEException as e:
                 _LOGGER.error(e)
@@ -104,7 +104,7 @@ def async_setup(hass, config):
             restart_bluetooth()
 
     # look for advertising messages periodically
-    async_track_time_interval(hass, scan_ble_devices, timedelta(milliseconds=2200))
+    async_track_time_interval(hass, scan_ble_devices, timedelta(milliseconds=1500))
 
     return True
 
