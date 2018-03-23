@@ -88,8 +88,8 @@ class CuteCareSensorProxy(CC41ADevice):
         transformations = {
             '%': lambda value: round((value / 1024) * 100,1),
             '%.': lambda value: round(100 - (value / 1024) * 100,1),
-            'lux': self.value,
-            'W': self.value
+            'lux': lambda value: value,
+            'W': lambda value: value
         }
         self._state = transformations[self._unit](self.value)
 
