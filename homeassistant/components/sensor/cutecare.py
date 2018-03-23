@@ -23,7 +23,9 @@ SENSOR_TYPES = {
     'moisture': ['Moisture', '%.'],
     'temperature': ['Temperature', 'C'],
     'pressure': ['Pressure', 'mm/hg'],
-    'co2': ['CO2', 'ppm']
+    'co2': ['CO2', 'ppm'],
+    'watt': ['Power', 'W'],
+    'lux': ['Illuminance', 'lux']
 }
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
@@ -85,7 +87,9 @@ class CuteCareSensorProxy(CC41ADevice):
 
         transformations = {
             '%': lambda value: round((value / 1024) * 100,1),
-            '%.': lambda value: round(100 - (value / 1024) * 100,1)
+            '%.': lambda value: round(100 - (value / 1024) * 100,1),
+            'lux': self.value,
+            'W': self.value
         }
         self._state = transformations[self._unit](self.value)
 
@@ -165,6 +169,8 @@ class CuteCareJDY8SensorProxy(JDY08Device):
             '%.': self.humidity,
             'C': self.temperature,
             'ppm': self.major,
+            'W': self.major,
+            'lux': self.major,
             'mm/hg': self.minor
         }
         self._state = transformations[self._unit]                
