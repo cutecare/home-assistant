@@ -175,7 +175,7 @@ class CuteCareJDY8SensorProxy(JDY08Device):
             'moisture2': self.temperature,
             'moisture3': self.minor,
             'temperature': self.temperature,
-            'co0': self.major,
+            'co2': self.major,
             'watt': self.major,
             'lux': self.major,
             'pressure': self.minor
