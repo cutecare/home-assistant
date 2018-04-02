@@ -134,7 +134,7 @@ class CuteCareJDY10SensorProxy(JDY10Device):
             'pressure': self.valueHigh,
             'co2': self.valueHigh * 10
         }
-        self._state = transformations[self._unit]        
+        self._state = transformations[self._parameter]        
 
 
 class CuteCareJDY8SensorProxy(JDY08Device):
@@ -172,7 +172,7 @@ class CuteCareJDY8SensorProxy(JDY08Device):
         transformations = {
             'dryness': 100 - self.humidity,
             'moisture': self.humidity,
-            'moisture2': self.major,
+            'moisture2': self.temperature,
             'moisture3': self.minor,
             'temperature': self.temperature,
             'co0': self.major,
@@ -180,4 +180,4 @@ class CuteCareJDY8SensorProxy(JDY08Device):
             'lux': self.major,
             'pressure': self.minor
         }
-        self._state = transformations[self._unit]                
+        self._state = transformations[self._parameter]                
