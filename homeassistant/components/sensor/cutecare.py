@@ -21,6 +21,8 @@ DEFAULT_NAME = 'CuteCare Sensor'
 SENSOR_TYPES = {
     'dryness': ['Dryness', '%'],
     'moisture': ['Moisture', '%.'],
+    'moisture2': ['Moisture', '%.'],
+    'moisture3': ['Moisture', '%.'],
     'temperature': ['Temperature', 'C'],
     'pressure': ['Pressure', 'mm/hg'],
     'co2': ['CO2', 'ppm'],
@@ -46,17 +48,18 @@ def setup_platform(hass, config, add_devices, discovery_info=None):
             name = "{} {}".format(prefix, name)
         
         if config.get(CONF_TYPE) == 'jdy10':
-            devs.append(CuteCareJDY10SensorProxy(hass, config.get(CONF_MAC), name, unit))
+            devs.append(CuteCareJDY10SensorProxy(hass, config.get(CONF_MAC), name, unit, parameter))
         elif config.get(CONF_TYPE) == 'jdy8':
-            devs.append(CuteCareJDY8SensorProxy(hass, config.get(CONF_MAC), name, unit))
+            devs.append(CuteCareJDY8SensorProxy(hass, config.get(CONF_MAC), name, unit, parameter))
         else:
-            devs.append(CuteCareSensorProxy(hass, config.get(CONF_MAC), name, unit))
+            devs.append(CuteCareSensorProxy(hass, config.get(CONF_MAC), name, unit, parameter))
 
     add_devices(devs)
 
 class CuteCareSensorProxy(CC41ADevice):
-    def __init__(self, hass, mac, name, unit):
+    def __init__(self, hass, mac, name, unit, parameter):
         self._unit = unit
+        self._parameter = parameter
         self._name = name
         self._force_update = False
         self._state = None
@@ -86,17 +89,18 @@ class CuteCareSensorProxy(CC41ADevice):
         """ Update sendor conditions. """
 
         transformations = {
-            '%': lambda value: round((value / 1024) * 100,1),
-            '%.': lambda value: round(100 - (value / 1024) * 100,1),
+            'dryness': lambda value: round((value / 1024) * 100,1),
+            'moisture': lambda value: round(100 - (value / 1024) * 100,1),
             'lux': lambda value: value,
-            'W': lambda value: value
+            'watt': lambda value: value
         }
-        self._state = transformations[self._unit](self.value)
+        self._state = transformations[self._parameter](self.value)
 
 
 class CuteCareJDY10SensorProxy(JDY10Device):
-    def __init__(self, hass, mac, name, unit):
+    def __init__(self, hass, mac, name, unit, parameter):
         self._unit = unit
+        self._parameter = parameter
         self._name = name
         self._force_update = False
         self._state = None
@@ -126,16 +130,17 @@ class CuteCareJDY10SensorProxy(JDY10Device):
         """ Update sendor conditions. """
 
         transformations = {
-            'C': self.valueLow,
-            'mm/hg': self.valueHigh,
-            'ppm': self.valueHigh * 10
+            'temperature': self.valueLow,
+            'pressure': self.valueHigh,
+            'co2': self.valueHigh * 10
         }
         self._state = transformations[self._unit]        
 
 
 class CuteCareJDY8SensorProxy(JDY08Device):
-    def __init__(self, hass, mac, name, unit):
+    def __init__(self, hass, mac, name, unit, parameter):
         self._unit = unit
+        self._parameter = parameter
         self._name = name
         self._force_update = False
         self._state = None
@@ -165,12 +170,14 @@ class CuteCareJDY8SensorProxy(JDY08Device):
         """ Update sendor conditions. """
 
         transformations = {
-            '%': 100 - self.humidity,
-            '%.': self.humidity,
-            'C': self.temperature,
-            'ppm': self.major,
-            'W': self.major,
+            'dryness': 100 - self.humidity,
+            'moisture': self.humidity,
+            'moisture2': self.major,
+            'moisture3': self.minor,
+            'temperature': self.temperature,
+            'co0': self.major,
+            'watt': self.major,
             'lux': self.major,
-            'mm/hg': self.minor
+            'pressure': self.minor
         }
         self._state = transformations[self._unit]                
