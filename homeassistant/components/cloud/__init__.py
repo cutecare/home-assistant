@@ -4,25 +4,23 @@ Component to integrate the Home Assistant cloud.
 For more details about this component, please refer to the documentation at
 https://home-assistant.io/components/cloud/
 """
-import asyncio
-from datetime import datetime
+from datetime import datetime, timedelta
 import json
 import logging
 import os
 
-import aiohttp
-import async_timeout
 import voluptuous as vol
 
 from homeassistant.const import (
-    EVENT_HOMEASSISTANT_START, CONF_REGION, CONF_MODE, CONF_NAME, CONF_TYPE)
+    EVENT_HOMEASSISTANT_START, CLOUD_NEVER_EXPOSED_ENTITIES, CONF_REGION,
+    CONF_MODE, CONF_NAME)
 from homeassistant.helpers import entityfilter, config_validation as cv
-from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.util import dt as dt_util
 from homeassistant.components.alexa import smart_home as alexa_sh
-from homeassistant.components.google_assistant import smart_home as ga_sh
+from homeassistant.components.google_assistant import helpers as ga_h
+from homeassistant.components.google_assistant import const as ga_c
 
-from . import http_api, iot
+from . import http_api, iot, auth_api, prefs
 from .const import CONFIG_DIR, DOMAIN, SERVERS
 
 REQUIREMENTS = ['warrant==0.6.1']
@@ -37,6 +35,8 @@ CONF_FILTER = 'filter'
 CONF_GOOGLE_ACTIONS = 'google_actions'
 CONF_RELAYER = 'relayer'
 CONF_USER_POOL_ID = 'user_pool_id'
+CONF_GOOGLE_ACTIONS_SYNC_URL = 'google_actions_sync_url'
+CONF_SUBSCRIPTION_INFO_URL = 'subscription_info_url'
 
 DEFAULT_MODE = 'production'
 DEPENDENCIES = ['http']
@@ -51,8 +51,8 @@ ALEXA_ENTITY_SCHEMA = vol.Schema({
 
 GOOGLE_ENTITY_SCHEMA = vol.Schema({
     vol.Optional(CONF_NAME): cv.string,
-    vol.Optional(CONF_TYPE): vol.In(ga_sh.MAPPING_COMPONENT),
-    vol.Optional(CONF_ALIASES): vol.All(cv.ensure_list, [cv.string])
+    vol.Optional(CONF_ALIASES): vol.All(cv.ensure_list, [cv.string]),
+    vol.Optional(ga_c.CONF_ROOM_HINT): cv.string,
 })
 
 ASSISTANT_SCHEMA = vol.Schema({
@@ -64,7 +64,7 @@ ALEXA_SCHEMA = ASSISTANT_SCHEMA.extend({
 })
 
 GACTIONS_SCHEMA = ASSISTANT_SCHEMA.extend({
-    vol.Optional(CONF_ENTITY_CONFIG): {cv.entity_id: GOOGLE_ENTITY_SCHEMA}
+    vol.Optional(CONF_ENTITY_CONFIG): {cv.entity_id: GOOGLE_ENTITY_SCHEMA},
 })
 
 CONFIG_SCHEMA = vol.Schema({
@@ -76,14 +76,15 @@ CONFIG_SCHEMA = vol.Schema({
         vol.Optional(CONF_USER_POOL_ID): str,
         vol.Optional(CONF_REGION): str,
         vol.Optional(CONF_RELAYER): str,
+        vol.Optional(CONF_GOOGLE_ACTIONS_SYNC_URL): str,
+        vol.Optional(CONF_SUBSCRIPTION_INFO_URL): str,
         vol.Optional(CONF_ALEXA): ALEXA_SCHEMA,
         vol.Optional(CONF_GOOGLE_ACTIONS): GACTIONS_SCHEMA,
     }),
 }, extra=vol.ALLOW_EXTRA)
 
 
-@asyncio.coroutine
-def async_setup(hass, config):
+async def async_setup(hass, config):
     """Initialize the Home Assistant cloud."""
     if DOMAIN in config:
         kwargs = dict(config[DOMAIN])
@@ -102,7 +103,7 @@ def async_setup(hass, config):
 
     cloud = hass.data[DOMAIN] = Cloud(hass, **kwargs)
     hass.bus.async_listen_once(EVENT_HOMEASSISTANT_START, cloud.async_start)
-    yield from http_api.async_setup(hass)
+    await http_api.async_setup(hass)
     return True
 
 
@@ -111,14 +112,15 @@ class Cloud:
 
     def __init__(self, hass, mode, alexa, google_actions,
                  cognito_client_id=None, user_pool_id=None, region=None,
-                 relayer=None):
+                 relayer=None, google_actions_sync_url=None,
+                 subscription_info_url=None):
         """Create an instance of Cloud."""
         self.hass = hass
         self.mode = mode
         self.alexa_config = alexa
-        self._google_actions = google_actions
+        self.google_actions_user_conf = google_actions
         self._gactions_config = None
-        self.jwt_keyset = None
+        self.prefs = prefs.CloudPreferences(hass)
         self.id_token = None
         self.access_token = None
         self.refresh_token = None
@@ -129,6 +131,8 @@ class Cloud:
             self.user_pool_id = user_pool_id
             self.region = region
             self.relayer = relayer
+            self.google_actions_sync_url = google_actions_sync_url
+            self.subscription_info_url = subscription_info_url
 
         else:
             info = SERVERS[mode]
@@ -137,6 +141,8 @@ class Cloud:
             self.user_pool_id = info['user_pool_id']
             self.region = info['region']
             self.relayer = info['relayer']
+            self.google_actions_sync_url = info['google_actions_sync_url']
+            self.subscription_info_url = info['subscription_info_url']
 
     @property
     def is_logged_in(self):
@@ -146,7 +152,7 @@ class Cloud:
     @property
     def subscription_expired(self):
         """Return a boolean if the subscription has expired."""
-        return dt_util.utcnow() > self.expiration_date
+        return dt_util.utcnow() > self.expiration_date + timedelta(days=7)
 
     @property
     def expiration_date(self):
@@ -169,16 +175,20 @@ class Cloud:
     def gactions_config(self):
         """Return the Google Assistant config."""
         if self._gactions_config is None:
-            conf = self._google_actions
+            conf = self.google_actions_user_conf
 
             def should_expose(entity):
                 """If an entity should be exposed."""
+                if entity.entity_id in CLOUD_NEVER_EXPOSED_ENTITIES:
+                    return False
+
                 return conf['filter'](entity.entity_id)
 
-            self._gactions_config = ga_sh.Config(
+            self._gactions_config = ga_h.Config(
                 should_expose=should_expose,
                 agent_user_id=self.claims['cognito:username'],
                 entity_config=conf.get(CONF_ENTITY_CONFIG),
+                allow_unlock=self.prefs.google_allow_unlock,
             )
 
         return self._gactions_config
@@ -190,17 +200,25 @@ class Cloud:
         """
         return self.hass.config.path(CONFIG_DIR, *parts)
 
-    @asyncio.coroutine
-    def logout(self):
+    async def fetch_subscription_info(self):
+        """Fetch subscription info."""
+        await self.hass.async_add_executor_job(auth_api.check_token, self)
+        websession = self.hass.helpers.aiohttp_client.async_get_clientsession()
+        return await websession.get(
+            self.subscription_info_url, headers={
+                'authorization': self.id_token
+            })
+
+    async def logout(self):
         """Close connection and remove all credentials."""
-        yield from self.iot.disconnect()
+        await self.iot.disconnect()
 
         self.id_token = None
         self.access_token = None
         self.refresh_token = None
         self._gactions_config = None
 
-        yield from self.hass.async_add_job(
+        await self.hass.async_add_job(
             lambda: os.remove(self.user_info_path))
 
     def write_user_info(self):
@@ -212,16 +230,8 @@ class Cloud:
                 'refresh_token': self.refresh_token,
             }, indent=4))
 
-    @asyncio.coroutine
-    def async_start(self, _):
+    async def async_start(self, _):
         """Start the cloud component."""
-        success = yield from self._fetch_jwt_keyset()
-
-        # Fetching keyset can fail if internet is not up yet.
-        if not success:
-            self.hass.helpers.event.async_call_later(5, self.async_start)
-            return
-
         def load_config():
             """Load config."""
             # Ensure config dir exists
@@ -236,17 +246,11 @@ class Cloud:
             with open(user_info, 'rt') as file:
                 return json.loads(file.read())
 
-        info = yield from self.hass.async_add_job(load_config)
+        info = await self.hass.async_add_job(load_config)
+
+        await self.prefs.async_initialize(bool(info))
 
         if info is None:
-            return
-
-        # Validate tokens
-        try:
-            for token in 'id_token', 'access_token':
-                self._decode_claims(info[token])
-        except ValueError as err:  # Raised when token is invalid
-            _LOGGER.warning("Found invalid token %s: %s", token, err)
             return
 
         self.id_token = info['id_token']
@@ -255,50 +259,7 @@ class Cloud:
 
         self.hass.add_job(self.iot.connect())
 
-    @asyncio.coroutine
-    def _fetch_jwt_keyset(self):
-        """Fetch the JWT keyset for the Cognito instance."""
-        session = async_get_clientsession(self.hass)
-        url = ("https://cognito-idp.us-east-1.amazonaws.com/"
-               "{}/.well-known/jwks.json".format(self.user_pool_id))
-
-        try:
-            with async_timeout.timeout(10, loop=self.hass.loop):
-                req = yield from session.get(url)
-                self.jwt_keyset = yield from req.json()
-
-            return True
-
-        except (asyncio.TimeoutError, aiohttp.ClientError) as err:
-            _LOGGER.error("Error fetching Cognito keyset: %s", err)
-            return False
-
-    def _decode_claims(self, token):
+    def _decode_claims(self, token):  # pylint: disable=no-self-use
         """Decode the claims in a token."""
-        from jose import jwt, exceptions as jose_exceptions
-        try:
-            header = jwt.get_unverified_header(token)
-        except jose_exceptions.JWTError as err:
-            raise ValueError(str(err)) from None
-        kid = header.get('kid')
-
-        if kid is None:
-            raise ValueError("No kid in header")
-
-        # Locate the key for this kid
-        key = None
-        for key_dict in self.jwt_keyset['keys']:
-            if key_dict['kid'] == kid:
-                key = key_dict
-                break
-        if not key:
-            raise ValueError(
-                "Unable to locate kid ({}) in keyset".format(kid))
-
-        try:
-            return jwt.decode(
-                token, key, audience=self.cognito_client_id, options={
-                    'verify_exp': False,
-                })
-        except jose_exceptions.JWTError as err:
-            raise ValueError(str(err)) from None
+        from jose import jwt
+        return jwt.get_unverified_claims(token)

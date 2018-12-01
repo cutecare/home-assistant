@@ -1,6 +1,7 @@
 """The tests for the emulated Hue component."""
 import asyncio
 import json
+from ipaddress import ip_address
 from unittest.mock import patch
 
 from aiohttp.hdrs import CONTENT_TYPE
@@ -26,7 +27,7 @@ JSON_HEADERS = {CONTENT_TYPE: const.CONTENT_TYPE_JSON}
 
 @pytest.fixture
 def hass_hue(loop, hass):
-    """Setup a Home Assistant instance for these tests."""
+    """Set up a Home Assistant instance for these tests."""
     # We need to do this to get access to homeassistant/turn_(on,off)
     loop.run_until_complete(
         core_components.async_setup(hass, {core.DOMAIN: {}}))
@@ -118,7 +119,7 @@ def hass_hue(loop, hass):
 
 
 @pytest.fixture
-def hue_client(loop, hass_hue, test_client):
+def hue_client(loop, hass_hue, aiohttp_client):
     """Create web client for emulated hue api."""
     web_app = hass_hue.http.app
     config = Config(None, {
@@ -130,12 +131,12 @@ def hue_client(loop, hass_hue, test_client):
         }
     })
 
-    HueUsernameView().register(web_app.router)
-    HueAllLightsStateView(config).register(web_app.router)
-    HueOneLightStateView(config).register(web_app.router)
-    HueOneLightChangeView(config).register(web_app.router)
+    HueUsernameView().register(web_app, web_app.router)
+    HueAllLightsStateView(config).register(web_app, web_app.router)
+    HueOneLightStateView(config).register(web_app, web_app.router)
+    HueOneLightChangeView(config).register(web_app, web_app.router)
 
-    return loop.run_until_complete(test_client(web_app))
+    return loop.run_until_complete(aiohttp_client(web_app))
 
 
 @asyncio.coroutine
@@ -420,11 +421,11 @@ def test_proper_put_state_request(hue_client):
 
 
 # pylint: disable=invalid-name
-def perform_put_test_on_ceiling_lights(hass_hue, hue_client,
-                                       content_type='application/json'):
+async def perform_put_test_on_ceiling_lights(hass_hue, hue_client,
+                                             content_type='application/json'):
     """Test the setting of a light."""
     # Turn the office light off first
-    yield from hass_hue.services.async_call(
+    await hass_hue.services.async_call(
         light.DOMAIN, const.SERVICE_TURN_OFF,
         {const.ATTR_ENTITY_ID: 'light.ceiling_lights'},
         blocking=True)
@@ -433,14 +434,14 @@ def perform_put_test_on_ceiling_lights(hass_hue, hue_client,
     assert ceiling_lights.state == STATE_OFF
 
     # Go through the API to turn it on
-    office_result = yield from perform_put_light_state(
+    office_result = await perform_put_light_state(
         hass_hue, hue_client,
         'light.ceiling_lights', True, 56, content_type)
 
     assert office_result.status == 200
     assert 'application/json' in office_result.headers['content-type']
 
-    office_result_json = yield from office_result.json()
+    office_result_json = await office_result.json()
 
     assert len(office_result_json) == 2
 
@@ -484,3 +485,12 @@ def perform_put_light_state(hass_hue, client, entity_id, is_on,
     yield from hass_hue.async_block_till_done()
 
     return result
+
+
+async def test_external_ip_blocked(hue_client):
+    """Test external IP blocked."""
+    with patch('homeassistant.components.http.real_ip.ip_address',
+               return_value=ip_address('45.45.45.45')):
+        result = await hue_client.get('/api/username/lights')
+
+    assert result.status == 400

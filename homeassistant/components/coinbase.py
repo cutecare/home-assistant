@@ -14,15 +14,14 @@ import homeassistant.helpers.config_validation as cv
 from homeassistant.helpers.discovery import load_platform
 from homeassistant.util import Throttle
 
-REQUIREMENTS = [
-    'https://github.com/balloob/coinbase-python/archive/'
-    '3a35efe13ef728a1cc18204b4f25be1fcb1c6006.zip#coinbase==2.0.8a1']
+REQUIREMENTS = ['coinbase==2.1.0']
 
 _LOGGER = logging.getLogger(__name__)
 
 DOMAIN = 'coinbase'
 
 CONF_API_SECRET = 'api_secret'
+CONF_ACCOUNT_CURRENCIES = 'account_balance_currencies'
 CONF_EXCHANGE_CURRENCIES = 'exchange_rate_currencies'
 
 MIN_TIME_BETWEEN_UPDATES = timedelta(minutes=1)
@@ -33,6 +32,8 @@ CONFIG_SCHEMA = vol.Schema({
     DOMAIN: vol.Schema({
         vol.Required(CONF_API_KEY): cv.string,
         vol.Required(CONF_API_SECRET): cv.string,
+        vol.Optional(CONF_ACCOUNT_CURRENCIES):
+            vol.All(cv.ensure_list, [cv.string]),
         vol.Optional(CONF_EXCHANGE_CURRENCIES, default=[]):
             vol.All(cv.ensure_list, [cv.string])
     })
@@ -47,6 +48,7 @@ def setup(hass, config):
     """
     api_key = config[DOMAIN].get(CONF_API_KEY)
     api_secret = config[DOMAIN].get(CONF_API_SECRET)
+    account_currencies = config[DOMAIN].get(CONF_ACCOUNT_CURRENCIES)
     exchange_currencies = config[DOMAIN].get(CONF_EXCHANGE_CURRENCIES)
 
     hass.data[DATA_COINBASE] = coinbase_data = CoinbaseData(
@@ -55,7 +57,13 @@ def setup(hass, config):
     if not hasattr(coinbase_data, 'accounts'):
         return False
     for account in coinbase_data.accounts.data:
-        load_platform(hass, 'sensor', DOMAIN, {'account': account}, config)
+        if (account_currencies is None or
+                account.currency in account_currencies):
+            load_platform(hass,
+                          'sensor',
+                          DOMAIN,
+                          {'account': account},
+                          config)
     for currency in exchange_currencies:
         if currency not in coinbase_data.exchange_rates.rates:
             _LOGGER.warning("Currency %s not found", currency)
@@ -71,7 +79,7 @@ def setup(hass, config):
     return True
 
 
-class CoinbaseData(object):
+class CoinbaseData:
     """Get the latest data and update the states."""
 
     def __init__(self, api_key, api_secret):

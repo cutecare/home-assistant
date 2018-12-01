@@ -62,7 +62,7 @@ def kill_raspistill(*args):
                      stderr=subprocess.STDOUT)
 
 
-def setup_platform(hass, config, add_devices, discovery_info=None):
+def setup_platform(hass, config, add_entities, discovery_info=None):
     """Set up the Raspberry Camera."""
     if shutil.which("raspistill") is None:
         _LOGGER.error("'raspistill' was not found")
@@ -105,6 +105,8 @@ def setup_platform(hass, config, add_devices, discovery_info=None):
     elif not hass.config.is_allowed_path(file_path):
         _LOGGER.error("'%s' is not a whitelisted directory", file_path)
         return False
+
+    add_entities([RaspberryCamera(setup_config)])
 
 
 class RaspberryCamera(Camera):

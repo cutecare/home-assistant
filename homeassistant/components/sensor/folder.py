@@ -21,7 +21,7 @@ CONF_FOLDER_PATHS = 'folder'
 CONF_FILTER = 'filter'
 DEFAULT_FILTER = '*'
 
-SCAN_INTERVAL = timedelta(seconds=1)
+SCAN_INTERVAL = timedelta(minutes=1)
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     vol.Required(CONF_FOLDER_PATHS): cv.isdir,
@@ -38,11 +38,11 @@ def get_files_list(folder_path, filter_term):
 
 def get_size(files_list):
     """Return the sum of the size in bytes of files in the list."""
-    size_list = [os.stat(f).st_size for f in files_list]
+    size_list = [os.stat(f).st_size for f in files_list if os.path.isfile(f)]
     return sum(size_list)
 
 
-def setup_platform(hass, config, add_devices, discovery_info=None):
+def setup_platform(hass, config, add_entities, discovery_info=None):
     """Set up the folder sensor."""
     path = config.get(CONF_FOLDER_PATHS)
 
@@ -50,7 +50,7 @@ def setup_platform(hass, config, add_devices, discovery_info=None):
         _LOGGER.error("folder %s is not valid or allowed", path)
     else:
         folder = Folder(path, config.get(CONF_FILTER))
-        add_devices([folder], True)
+        add_entities([folder], True)
 
 
 class Folder(Entity):

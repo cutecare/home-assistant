@@ -24,7 +24,7 @@ class TestCanarySensorSetup(unittest.TestCase):
 
     DEVICES = []
 
-    def add_devices(self, devices, action):
+    def add_entities(self, devices, action):
         """Mock add devices."""
         for device in devices:
             self.DEVICES.append(device)
@@ -40,9 +40,9 @@ class TestCanarySensorSetup(unittest.TestCase):
 
     def test_setup_sensors(self):
         """Test the sensor setup."""
-        online_device_at_home = mock_device(20, "Dining Room", True)
-        offline_device_at_home = mock_device(21, "Front Yard", False)
-        online_device_at_work = mock_device(22, "Office", True)
+        online_device_at_home = mock_device(20, "Dining Room", True, "Canary")
+        offline_device_at_home = mock_device(21, "Front Yard", False, "Canary")
+        online_device_at_work = mock_device(22, "Office", True, "Canary")
 
         self.hass.data[DATA_CANARY] = Mock()
         self.hass.data[DATA_CANARY].locations = [
@@ -51,13 +51,13 @@ class TestCanarySensorSetup(unittest.TestCase):
             mock_location("Work", True, devices=[online_device_at_work]),
         ]
 
-        canary.setup_platform(self.hass, self.config, self.add_devices, None)
+        canary.setup_platform(self.hass, self.config, self.add_entities, None)
 
-        self.assertEqual(6, len(self.DEVICES))
+        assert 6 == len(self.DEVICES)
 
     def test_temperature_sensor(self):
         """Test temperature sensor with fahrenheit."""
-        device = mock_device(10, "Family Room")
+        device = mock_device(10, "Family Room", "Canary")
         location = mock_location("Home", False)
 
         data = Mock()
@@ -66,13 +66,14 @@ class TestCanarySensorSetup(unittest.TestCase):
         sensor = CanarySensor(data, SENSOR_TYPES[0], location, device)
         sensor.update()
 
-        self.assertEqual("Home Family Room Temperature", sensor.name)
-        self.assertEqual("°C", sensor.unit_of_measurement)
-        self.assertEqual(21.12, sensor.state)
+        assert "Home Family Room Temperature" == sensor.name
+        assert "°C" == sensor.unit_of_measurement
+        assert 21.12 == sensor.state
+        assert "mdi:thermometer" == sensor.icon
 
     def test_temperature_sensor_with_none_sensor_value(self):
         """Test temperature sensor with fahrenheit."""
-        device = mock_device(10, "Family Room")
+        device = mock_device(10, "Family Room", "Canary")
         location = mock_location("Home", False)
 
         data = Mock()
@@ -81,11 +82,11 @@ class TestCanarySensorSetup(unittest.TestCase):
         sensor = CanarySensor(data, SENSOR_TYPES[0], location, device)
         sensor.update()
 
-        self.assertEqual(None, sensor.state)
+        assert sensor.state is None
 
     def test_humidity_sensor(self):
         """Test humidity sensor."""
-        device = mock_device(10, "Family Room")
+        device = mock_device(10, "Family Room", "Canary")
         location = mock_location("Home")
 
         data = Mock()
@@ -94,13 +95,14 @@ class TestCanarySensorSetup(unittest.TestCase):
         sensor = CanarySensor(data, SENSOR_TYPES[1], location, device)
         sensor.update()
 
-        self.assertEqual("Home Family Room Humidity", sensor.name)
-        self.assertEqual("%", sensor.unit_of_measurement)
-        self.assertEqual(50.46, sensor.state)
+        assert "Home Family Room Humidity" == sensor.name
+        assert "%" == sensor.unit_of_measurement
+        assert 50.46 == sensor.state
+        assert "mdi:water-percent" == sensor.icon
 
     def test_air_quality_sensor_with_very_abnormal_reading(self):
         """Test air quality sensor."""
-        device = mock_device(10, "Family Room")
+        device = mock_device(10, "Family Room", "Canary")
         location = mock_location("Home")
 
         data = Mock()
@@ -109,16 +111,17 @@ class TestCanarySensorSetup(unittest.TestCase):
         sensor = CanarySensor(data, SENSOR_TYPES[2], location, device)
         sensor.update()
 
-        self.assertEqual("Home Family Room Air Quality", sensor.name)
-        self.assertEqual(None, sensor.unit_of_measurement)
-        self.assertEqual(0.4, sensor.state)
+        assert "Home Family Room Air Quality" == sensor.name
+        assert sensor.unit_of_measurement is None
+        assert 0.4 == sensor.state
+        assert "mdi:weather-windy" == sensor.icon
 
         air_quality = sensor.device_state_attributes[ATTR_AIR_QUALITY]
-        self.assertEqual(STATE_AIR_QUALITY_VERY_ABNORMAL, air_quality)
+        assert STATE_AIR_QUALITY_VERY_ABNORMAL == air_quality
 
     def test_air_quality_sensor_with_abnormal_reading(self):
         """Test air quality sensor."""
-        device = mock_device(10, "Family Room")
+        device = mock_device(10, "Family Room", "Canary")
         location = mock_location("Home")
 
         data = Mock()
@@ -127,16 +130,17 @@ class TestCanarySensorSetup(unittest.TestCase):
         sensor = CanarySensor(data, SENSOR_TYPES[2], location, device)
         sensor.update()
 
-        self.assertEqual("Home Family Room Air Quality", sensor.name)
-        self.assertEqual(None, sensor.unit_of_measurement)
-        self.assertEqual(0.59, sensor.state)
+        assert "Home Family Room Air Quality" == sensor.name
+        assert sensor.unit_of_measurement is None
+        assert 0.59 == sensor.state
+        assert "mdi:weather-windy" == sensor.icon
 
         air_quality = sensor.device_state_attributes[ATTR_AIR_QUALITY]
-        self.assertEqual(STATE_AIR_QUALITY_ABNORMAL, air_quality)
+        assert STATE_AIR_QUALITY_ABNORMAL == air_quality
 
     def test_air_quality_sensor_with_normal_reading(self):
         """Test air quality sensor."""
-        device = mock_device(10, "Family Room")
+        device = mock_device(10, "Family Room", "Canary")
         location = mock_location("Home")
 
         data = Mock()
@@ -145,16 +149,17 @@ class TestCanarySensorSetup(unittest.TestCase):
         sensor = CanarySensor(data, SENSOR_TYPES[2], location, device)
         sensor.update()
 
-        self.assertEqual("Home Family Room Air Quality", sensor.name)
-        self.assertEqual(None, sensor.unit_of_measurement)
-        self.assertEqual(1.0, sensor.state)
+        assert "Home Family Room Air Quality" == sensor.name
+        assert sensor.unit_of_measurement is None
+        assert 1.0 == sensor.state
+        assert "mdi:weather-windy" == sensor.icon
 
         air_quality = sensor.device_state_attributes[ATTR_AIR_QUALITY]
-        self.assertEqual(STATE_AIR_QUALITY_NORMAL, air_quality)
+        assert STATE_AIR_QUALITY_NORMAL == air_quality
 
     def test_air_quality_sensor_with_none_sensor_value(self):
         """Test air quality sensor."""
-        device = mock_device(10, "Family Room")
+        device = mock_device(10, "Family Room", "Canary")
         location = mock_location("Home")
 
         data = Mock()
@@ -163,5 +168,37 @@ class TestCanarySensorSetup(unittest.TestCase):
         sensor = CanarySensor(data, SENSOR_TYPES[2], location, device)
         sensor.update()
 
-        self.assertEqual(None, sensor.state)
-        self.assertEqual(None, sensor.device_state_attributes)
+        assert sensor.state is None
+        assert sensor.device_state_attributes is None
+
+    def test_battery_sensor(self):
+        """Test battery sensor."""
+        device = mock_device(10, "Family Room", "Canary Flex")
+        location = mock_location("Home")
+
+        data = Mock()
+        data.get_reading.return_value = 70.4567
+
+        sensor = CanarySensor(data, SENSOR_TYPES[4], location, device)
+        sensor.update()
+
+        assert "Home Family Room Battery" == sensor.name
+        assert "%" == sensor.unit_of_measurement
+        assert 70.46 == sensor.state
+        assert "mdi:battery-70" == sensor.icon
+
+    def test_wifi_sensor(self):
+        """Test battery sensor."""
+        device = mock_device(10, "Family Room", "Canary Flex")
+        location = mock_location("Home")
+
+        data = Mock()
+        data.get_reading.return_value = -57
+
+        sensor = CanarySensor(data, SENSOR_TYPES[3], location, device)
+        sensor.update()
+
+        assert "Home Family Room Wifi" == sensor.name
+        assert "dBm" == sensor.unit_of_measurement
+        assert -57 == sensor.state
+        assert "mdi:wifi" == sensor.icon
